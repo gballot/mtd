@@ -48,6 +48,24 @@ class Node:
     def __str__(self):
         return self.name
 
+    def __le__(self, other):
+        return self.name <= other.name
+
+    def __ge__(self, other):
+        return self.name >= other.name
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __gt__(self, other):
+        return self.name > other.name
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __ne__(self, other):
+        return self.name != other.name
+
     def get_children(self, include_defense=False):
         if include_defense and self.defense_child:
             return self.attack_childern + self.goal_children + [self.defense_child]
@@ -146,10 +164,10 @@ class Tree:
     def __init__(self, root):
         self.root = root
         self.root.set_parents()
-        self.defense_periods = self.get_defense_periods(root)
+        self.defense_periods = self.get_defense_periods()
         self.init_dfs()
 
-    def get_defense_periods(self, root):
+    def get_defense_periods(self):
         defense_periods = []
         for node in self.dfs(include_defense=True):
             if node.node_type == NodeType.DEFENSE:

@@ -1,5 +1,6 @@
 from tree import Tree, Goal, Attack, Defense, OperationType
 
+
 class Graph:
     def __init__(self, tree):
         self.tree = tree
@@ -7,50 +8,79 @@ class Graph:
         self.build_graph()
 
     def build_graph(self):
-        self.defense_periods = self.tree.get_defense_periods
-        AttackerState([], [], defense_periods, self)
+        self.defense_periods = self.tree.defense_periods
+        AttackerState(
+            activated=[],
+            completed=[],
+            defense_periods=self.defense_periods,
+            graph=self,
+            build=True,
+        )
+
+    def __str__(self):
+        string = ""
+        for name, state in self.states.items():
+            string += f"-------->{state}\n"
+        return string
 
 
 class State:
-    def __inti__(self, edges=None):
-        self.edges = edges if edge else list()
+    def __init__(self, edges=None):
+        self.edges = edges if edges else list()
+
+    def __str__(self):
+        string = ""
+        for edge in self.edges:
+            string += f"{edge.source.serialize()} --> {edge.destination.serialize()}\n"
+        return string
 
 
 class AttackerState(State):
-    def __init__(self, activated, completed, defense_periods=None, graph=None):
+    def __init__(self, activated, completed, defense_periods, graph, build=False):
         super().__init__()
         self.activated = activated
         self.completed = completed
         self.defense_periods = defense_periods
         self.key = self.serialize()
-        if graph:
-            if key not in graph.states:
-                graph.states[key] = self
-            self.edges = self.build_edges(graph)
+        if self.key not in graph.states:
+            graph.states[self.key] = self
+        if build:
+            self.build_edges(graph)
+
+    def __str__(self):
+        return f"Attacker State {self.serialize()}\n" + super().__str__()
 
     def build_edges(self, graph):
         for attack in self.activated:
-            self.build_attack_edge(attack, graph)
+            self.build_completion_edge(attack, graph)
+
+        for attack in graph.tree.attacks:
+            if attack not in self.activated:
+                self.build_activation_edges(attack, graph)
 
         for completed_node in self.completed:
             pass
 
-    def build_attack_edges(self, attack, graph):
+    def build_activation_edges(self, attack, graph):
         destination = AttackerState(
-            self.get_activated().add(attack),
-            self.get_completed(),
-            self.defense_periods,
-            graph,
+            activated=self.get_activated() + [attack],
+            completed=self.get_completed(),
+            defense_periods=self.defense_periods,
+            graph=graph,
+            build=True,
         )
         self.edges.append(
             ActivationEdge(source=self, destination=destination, attack=attack)
         )
 
+    def build_completion_edge(self, attack, graph):
+        pass
+
     def serialize(self):
         return (
-            tuple(sorted(activated)),
-            tuple(sorted(completed)),
-            tuple(sorted(defense_periods)),
+            tuple(sorted([elem.name for elem in self.activated])),
+            tuple(sorted([elem.name for elem in self.completed])),
+            tuple(sorted(self.defense_periods)),
         )
 
     def get_activated(self, copy=True):
@@ -84,7 +114,7 @@ class Edge:
 
 class ActivationEdge(Edge):
     def __init__(self, source, destination, attack):
-        super().init(source=source, destination=destination)
+        super().__init__(source=source, destination=destination)
         self.attack = attack
 
 
@@ -100,7 +130,10 @@ if __name__ == "__main__":
                         name="a0",
                     ),
                     Attack(
-                        completion_time=3, success_probability=0.2, activation_cost=1
+                        completion_time=3,
+                        success_probability=0.2,
+                        activation_cost=1,
+                        name="a1",
                     ),
                 ],
                 operation_type=OperationType.OR,
@@ -123,3 +156,5 @@ if __name__ == "__main__":
     print(
         f"parent of {tree.root}'s child {tree.get_children()[1]} is {tree.get_children()[1].parent}"
     )
+    graph = Graph(tree)
+    print(graph)
