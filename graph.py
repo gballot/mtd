@@ -97,7 +97,17 @@ class AttackerState(State):
         )
 
     def build_completion_edge(self, attack, graph):
-        pass
+        destination = CompletionState(
+            activated=self.get_activated(),
+            completed=self.get_completed(),
+            new_completed=attack,
+            defense_periods=self.defense_periods,
+            graph=graph,
+            build=True,
+        )
+        self.edges.append(
+            CompletionEdge(source=self, destination=destination, attack=attack)
+        )
 
     def get_activated(self, copy=True):
         if copy:
@@ -112,12 +122,34 @@ class AttackerState(State):
             return self.completed
 
 
-class MTDState(State):
-    def __init__(self):
+class CompletionState(State):
+    def __init__(
+        self, activated, completed, new_completed, defense_periods, graph, build=False
+    ):
+        super().__init__(
+            activated=activated,
+            completed=completed,
+            defense_periods=defense_periods,
+            state_type=StateType.COMPLETION,
+        )
+        self.new_completed = new_completed
+        self.key = self.serialize()
+        if self.key not in graph.states:
+            graph.states[self.key] = self
+        if build:
+            self.build_edges(graph)
+
+    def __str__(self):
+        return f"Completion State {self.serialize()}\n" + super().__str__()
+
+    def build_edges(self, graph):
         pass
 
+    def serialize(self):
+        return super().serialize() + (self.new_completed.name,)
 
-class CompletionState(State):
+
+class MTDState(State):
     def __init__(self):
         pass
 
@@ -129,6 +161,12 @@ class Edge:
 
 
 class ActivationEdge(Edge):
+    def __init__(self, source, destination, attack):
+        super().__init__(source=source, destination=destination)
+        self.attack = attack
+
+
+class CompletionEdge(Edge):
     def __init__(self, source, destination, attack):
         super().__init__(source=source, destination=destination)
         self.attack = attack
