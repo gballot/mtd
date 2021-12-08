@@ -1,4 +1,11 @@
+from enum import Enum
 from tree import Tree, Goal, Attack, Defense, OperationType
+
+
+class StateType(Enum):
+    NORMAL = 1
+    MTD = 2
+    COMPLETION = 3
 
 
 class Graph:
@@ -20,27 +27,43 @@ class Graph:
     def __str__(self):
         string = ""
         for name, state in self.states.items():
-            string += f"-------->{state}\n"
+            string += f"=======>{state}<=======\n"
         return string
 
 
 class State:
-    def __init__(self, edges=None):
+    def __init__(
+        self, activated, completed, defense_periods, state_type=None, edges=None
+    ):
         self.edges = edges if edges else list()
+        self.activated = activated
+        self.completed = completed
+        self.defense_periods = defense_periods
+        self.state_type = state_type
 
     def __str__(self):
         string = ""
         for edge in self.edges:
-            string += f"{edge.source.serialize()} --> {edge.destination.serialize()}\n"
+            string += f"--> {edge.destination.serialize()}\n"
         return string
+
+    def serialize(self):
+        return (
+            tuple(sorted([elem.name for elem in self.activated])),
+            tuple(sorted([elem.name for elem in self.completed])),
+            tuple(sorted(self.defense_periods)),
+            self.state_type.name,
+        )
 
 
 class AttackerState(State):
     def __init__(self, activated, completed, defense_periods, graph, build=False):
-        super().__init__()
-        self.activated = activated
-        self.completed = completed
-        self.defense_periods = defense_periods
+        super().__init__(
+            activated=activated,
+            completed=completed,
+            defense_periods=defense_periods,
+            state_type=StateType.NORMAL,
+        )
         self.key = self.serialize()
         if self.key not in graph.states:
             graph.states[self.key] = self
@@ -75,13 +98,6 @@ class AttackerState(State):
 
     def build_completion_edge(self, attack, graph):
         pass
-
-    def serialize(self):
-        return (
-            tuple(sorted([elem.name for elem in self.activated])),
-            tuple(sorted([elem.name for elem in self.completed])),
-            tuple(sorted(self.defense_periods)),
-        )
 
     def get_activated(self, copy=True):
         if copy:
