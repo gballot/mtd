@@ -64,7 +64,7 @@ class Node:
             child.set_parents(self)
 
     def dfs(self, visited, include_defense=False):
-        for child in get_children(include_defense=include_defense):
+        for child in self.get_children(include_defense=include_defense):
             visited.append(child)
             child.dfs(visited, include_defense=include_defense)
 
@@ -151,7 +151,7 @@ class Tree:
 
     def get_defense_periods(self, root):
         defense_periods = []
-        for node in tree.dfs():
+        for node in self.dfs(include_defense=True):
             if node.node_type == NodeType.DEFENSE:
                 defense_periods.append(node.period)
         return defense_periods
@@ -170,6 +170,7 @@ class Tree:
         self.attacks = []
         self.defenses = []
         self.goals = []
+        nodes = []
         self.root.dfs(nodes, include_defense=True)
         for node in nodes:
             if node.node_type == NodeType.ATTACK:

@@ -1,3 +1,5 @@
+from tree import Tree, Goal, Attack, Defense, OperationType
+
 class Graph:
     def __init__(self, tree):
         self.tree = tree
@@ -84,3 +86,40 @@ class ActivationEdge(Edge):
     def __init__(self, source, destination, attack):
         super().init(source=source, destination=destination)
         self.attack = attack
+
+
+if __name__ == "__main__":
+    root = Goal(
+        children=[
+            Goal(
+                children=[
+                    Attack(
+                        completion_time=10,
+                        success_probability=0.5,
+                        activation_cost=5,
+                        name="a0",
+                    ),
+                    Attack(
+                        completion_time=3, success_probability=0.2, activation_cost=1
+                    ),
+                ],
+                operation_type=OperationType.OR,
+                reset=False,
+                name="g1",
+            ),
+            Attack(
+                completion_time=7,
+                success_probability=0.7,
+                activation_cost=10,
+                name="a2",
+            ),
+            Defense(period=5, success_probability=0.6, name="d0"),
+        ],
+        operation_type=OperationType.AND,
+        reset=True,
+        name="g0",
+    )
+    tree = Tree(root)
+    print(
+        f"parent of {tree.root}'s child {tree.get_children()[1]} is {tree.get_children()[1].parent}"
+    )
