@@ -15,30 +15,40 @@ class Graph:
         self.build_graph()
 
     def build_graph(self):
-        self.defense_periods = self.tree.defense_periods
         AttackerState(
             activated=[],
             completed=[],
-            defense_periods=self.defense_periods,
-            graph=self,
-            build=True,
-        )
+            tree=self.tree,
+        ).build(graph=self)
 
     def __str__(self):
-        string = ""
+        string = f"number of states: {len(self.states)}\n"
         for name, state in self.states.items():
             string += f"=======>{state}<=======\n"
         return string
 
 
-class State:
-    def __init__(
-        self, activated, completed, defense_periods, state_type=None, edges=None
-    ):
+class Unique(type):
+    """Make sure a state class has unique objects."""
+
+    def __call__(cls, *args, **kwargs):
+        self = cls.__new__(cls, *args, **kwargs)
+        cls.__init__(self, *args, **kwargs)
+        if self.key not in cls._cache:
+            cls._cache[self.key] = self
+        return cls._cache[self.key]
+
+    def __init__(cls, name, bases, attributes):
+        super().__init__(name, bases, attributes)
+        cls._cache = {}
+
+
+class State(metaclass=Unique):
+    def __init__(self, activated, completed, tree, state_type=None, edges=None):
         self.edges = edges if edges else list()
         self.activated = activated
         self.completed = completed
-        self.defense_periods = defense_periods
+        self.tree = tree
         self.state_type = state_type
 
     def __str__(self):
@@ -49,29 +59,42 @@ class State:
 
     def serialize(self):
         return (
-            tuple(sorted([elem.name for elem in self.activated])),
-            tuple(sorted([elem.name for elem in self.completed])),
-            tuple(sorted(self.defense_periods)),
+            tuple(sorted({elem.name for elem in self.activated})),
+            tuple(sorted({elem.name for elem in self.completed})),
+            tuple(sorted(self.tree.defense_periods)),
             self.state_type.name,
         )
 
+    def get_activated(self, copy=True):
+        if copy:
+            return self.activated.copy()
+        else:
+            return self.activated
+
+    def get_completed(self, copy=True):
+        if copy:
+            return self.completed.copy()
+        else:
+            return self.completed
+
 
 class AttackerState(State):
-    def __init__(self, activated, completed, defense_periods, graph, build=False):
+    def __init__(self, activated, completed, tree):
         super().__init__(
             activated=activated,
             completed=completed,
-            defense_periods=defense_periods,
+            tree=tree,
             state_type=StateType.NORMAL,
         )
         self.key = self.serialize()
-        if self.key not in graph.states:
-            graph.states[self.key] = self
-        if build:
-            self.build_edges(graph)
 
     def __str__(self):
         return f"Attacker State {self.serialize()}\n" + super().__str__()
+
+    def build(self, graph):
+        if self.key not in graph.states:
+            graph.states[self.key] = self
+            self.build_edges(graph)
 
     def build_edges(self, graph):
         for attack in self.activated:
@@ -88,62 +111,88 @@ class AttackerState(State):
         destination = AttackerState(
             activated=self.get_activated() + [attack],
             completed=self.get_completed(),
-            defense_periods=self.defense_periods,
-            graph=graph,
-            build=True,
+            tree=self.tree,
         )
         self.edges.append(
             ActivationEdge(source=self, destination=destination, attack=attack)
         )
+        destination.build(graph=graph)
 
     def build_completion_edge(self, attack, graph):
         destination = CompletionState(
             activated=self.get_activated(),
             completed=self.get_completed(),
             new_completed=attack,
-            defense_periods=self.defense_periods,
-            graph=graph,
-            build=True,
+            tree=self.tree,
         )
         self.edges.append(
-            CompletionEdge(source=self, destination=destination, attack=attack)
+            ToCompletionEdge(source=self, destination=destination, attack=attack)
         )
-
-    def get_activated(self, copy=True):
-        if copy:
-            return self.activated.copy()
-        else:
-            return self.activated
-
-    def get_completed(self, copy=True):
-        if copy:
-            return self.completed.copy()
-        else:
-            return self.completed
+        destination.build(graph=graph)
 
 
 class CompletionState(State):
-    def __init__(
-        self, activated, completed, new_completed, defense_periods, graph, build=False
-    ):
+    def __init__(self, activated, completed, new_completed, tree):
         super().__init__(
             activated=activated,
             completed=completed,
-            defense_periods=defense_periods,
+            tree=tree,
             state_type=StateType.COMPLETION,
         )
         self.new_completed = new_completed
         self.key = self.serialize()
-        if self.key not in graph.states:
-            graph.states[self.key] = self
-        if build:
-            self.build_edges(graph)
 
     def __str__(self):
         return f"Completion State {self.serialize()}\n" + super().__str__()
 
+    def build(self, graph):
+        if self.key not in graph.states:
+            graph.states[self.key] = self
+            self.build_edges(graph)
+
     def build_edges(self, graph):
-        pass
+        # Success edge
+        destination_success_activated = self.get_activated()
+        destination_success_activated.remove(self.new_completed)
+        destination_success_completed = self.get_completed()
+        destination_success_completed.append(self.new_completed)
+
+        destination_success = AttackerState(
+            activated=destination_success_activated,
+            completed=destination_success_completed,
+            tree=self.tree,
+        )
+
+        self.edges.append(
+            CompletionEdge(
+                source=self,
+                destination=destination_success,
+                attack=self.new_completed,
+                success=True,
+            )
+        )
+        destination_success.build(graph=graph)
+
+        # Fail edge
+        destination_fail_activated = self.get_activated()
+        destination_fail_activated.remove(self.new_completed)
+        destination_fail_completed = self.get_completed()
+
+        destination_fail = AttackerState(
+            activated=destination_fail_activated,
+            completed=destination_fail_completed,
+            tree=self.tree,
+        )
+
+        self.edges.append(
+            CompletionEdge(
+                source=self,
+                destination=destination_fail,
+                attack=self.new_completed,
+                success=False,
+            )
+        )
+        destination_fail.build(graph=graph)
 
     def serialize(self):
         return super().serialize() + (self.new_completed.name,)
@@ -156,6 +205,7 @@ class MTDState(State):
 
 class Edge:
     def __init__(self, source, destination):
+        assert source is not None and destination is not None
         self.source = source
         self.destination = destination
 
@@ -166,10 +216,21 @@ class ActivationEdge(Edge):
         self.attack = attack
 
 
-class CompletionEdge(Edge):
+class ToCompletionEdge(Edge):
     def __init__(self, source, destination, attack):
         super().__init__(source=source, destination=destination)
         self.attack = attack
+
+
+class CompletionEdge(Edge):
+    def __init__(self, source, destination, attack, success):
+        super().__init__(source=source, destination=destination)
+        self.attack = attack
+        self.success = success
+        if success:
+            self.success_probability = attack.success_probability
+        else:
+            self.success_probability = 1.0 - attack.success_probability
 
 
 if __name__ == "__main__":

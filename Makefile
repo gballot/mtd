@@ -1,0 +1,2 @@
+tag:
+	ctags -R .
