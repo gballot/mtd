@@ -211,12 +211,16 @@ class Tree:
                     parent is not None
                     and parent not in completed
                     and not parent.reset
-                    and (parent.operation_type == OperationType.OR
+                    and (
+                        parent.operation_type == OperationType.OR
                         or (
                             parent.operation_type == OperationType.AND
-                            and {n.name for n in parent.attack_childern} <= {n.name for n in completed}
-                            and {n.name for n in parent.goal_children} <= {n.name for n in completed}
-                    ))
+                            and {n.name for n in parent.attack_childern}
+                            <= {n.name for n in completed}
+                            and {n.name for n in parent.goal_children}
+                            <= {n.name for n in completed}
+                        )
+                    )
                 ):
                     fixed_point = False
                     completed.append(parent)

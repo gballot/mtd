@@ -22,8 +22,13 @@ class Graph:
         ).build(graph=self)
 
     def __str__(self):
-        string = f"number of states: {len(self.states)}\n"
-        for name, state in self.states.items():
+        edges_number = 0
+        for state in self.states.values():
+            edges_number += len(state.edges)
+        string = (
+            f"number of states: {len(self.states)}, number of edges: {edges_number}\n"
+        )
+        for state in self.states.values():
             string += f"=======>{state}<=======\n"
         return string
 
@@ -52,7 +57,9 @@ class State(metaclass=Unique):
         # Build subtrees of nodes that doesn't matter anymore
         self.completed_subtree = []
         for node in self.completed:
-            if node not in self.completed_subtree and (node.node_type != NodeType.GOAL or not node.reset):
+            if node not in self.completed_subtree and (
+                node.node_type != NodeType.GOAL or not node.reset
+            ):
                 self.completed_subtree = [node]
                 decendants = node.dfs(self.completed_subtree)
 
@@ -66,7 +73,11 @@ class State(metaclass=Unique):
                 self.active_defenses.append(defense)
 
         for node in self.completed:
-            if node.node_type == NodeType.GOAL and node.defense_child is not None and node.reset:
+            if (
+                node.node_type == NodeType.GOAL
+                and node.defense_child is not None
+                and node.reset
+            ):
                 self.active_defenses.append(node.defense_child)
 
         self.tree = tree
@@ -128,7 +139,6 @@ class AttackerState(State):
         for defense in self.tree.defenses:
             self.build_defense_edge(defense, graph)
 
-
     def build_activation_edges(self, attack, graph):
         destination = AttackerState(
             activated=self.get_activated() + [attack],
@@ -165,7 +175,9 @@ class AttackerState(State):
             )
             destination.build(graph=graph)
         else:
-            self.edges.append(LoopDefenseEdge(source=self, destination=self, defense=defense))
+            self.edges.append(
+                LoopDefenseEdge(source=self, destination=self, defense=defense)
+            )
 
 
 class CompletionState(State):
@@ -261,7 +273,10 @@ class DefenseState(State):
         for reseted_attack in self.defense.parent.attack_childern:
             if reseted_attack in destination_success_activated:
                 destination_success_activated.remove(reseted_attack)
-        if self.defense.parent.reset and self.defense.parent in destination_success_completed:
+        if (
+            self.defense.parent.reset
+            and self.defense.parent in destination_success_completed
+        ):
             destination_success_completed.remove(self.defense.parent)
 
         destination_success = AttackerState(
@@ -281,10 +296,16 @@ class DefenseState(State):
         destination_success.build(graph=graph)
 
         # Fail edge
+        destination_fail = AttackerState(
+            activated=self.get_activated(),
+            completed=self.get_completed(),
+            tree=self.tree,
+        )
+
         self.edges.append(
             DefenseEdge(
                 source=self,
-                destination=self,
+                destination=destination_fail,
                 defense=self.defense,
                 success=False,
             )
@@ -339,6 +360,7 @@ class DefenseEdge(Edge):
             self.success_probability = defense.success_probability
         else:
             self.success_probability = 1.0 - defense.success_probability
+
 
 class LoopDefenseEdge(Edge):
     def __init__(self, source, destination, defense):
