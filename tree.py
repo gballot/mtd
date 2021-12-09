@@ -162,6 +162,7 @@ class Defense(Node):
 
 class Tree:
     def __init__(self, root):
+        assert not root.reset
         self.root = root
         self.root.set_parents()
         self.defense_periods = self.get_defense_periods()

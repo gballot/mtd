@@ -49,12 +49,25 @@ class State(metaclass=Unique):
         self.activated = activated
         self.completed = completed
         tree.reduce_activated_completed(self.activated, self.completed)
-        # build subtrees of nodes that doesn't matter anymore
+        # Build subtrees of nodes that doesn't matter anymore
         self.completed_subtree = []
         for node in self.completed:
             if node not in self.completed_subtree and (node.node_type != NodeType.GOAL or not node.reset):
                 self.completed_subtree = [node]
                 decendants = node.dfs(self.completed_subtree)
+
+        # Build list of defenses that matter
+        self.active_defenses = []
+        for attack in self.activated:
+            if attack.parent is None:
+                continue
+            defense = attack.parent.defense_child
+            if defense is not None and defense not in self.active_defenses:
+                self.active_defenses.append(defense)
+
+        for node in self.completed:
+            if node.node_type == NodeType.GOAL and node.defense_child is not None and node.reset:
+                self.active_defenses.append(node.defense_child)
 
         self.tree = tree
         self.state_type = state_type
@@ -112,8 +125,9 @@ class AttackerState(State):
             if attack not in self.activated and attack not in self.completed_subtree:
                 self.build_activation_edges(attack, graph)
 
-        for completed_node in self.completed:
-            pass
+        for defense in self.tree.defenses:
+            self.build_defense_edge(defense, graph)
+
 
     def build_activation_edges(self, attack, graph):
         destination = AttackerState(
@@ -137,6 +151,21 @@ class AttackerState(State):
             ToCompletionEdge(source=self, destination=destination, attack=attack)
         )
         destination.build(graph=graph)
+
+    def build_defense_edge(self, defense, graph):
+        if defense in self.active_defenses:
+            destination = DefenseState(
+                activated=self.get_activated(),
+                completed=self.get_completed(),
+                defense=defense,
+                tree=self.tree,
+            )
+            self.edges.append(
+                ToDefenseEdge(source=self, destination=destination, defense=defense)
+            )
+            destination.build(graph=graph)
+        else:
+            self.edges.append(LoopDefenseEdge(source=self, destination=self, defense=defense))
 
 
 class CompletionState(State):
@@ -206,9 +235,63 @@ class CompletionState(State):
         return super().serialize() + (self.new_completed.name,)
 
 
-class MTDState(State):
-    def __init__(self):
-        pass
+class DefenseState(State):
+    def __init__(self, activated, completed, defense, tree):
+        super().__init__(
+            activated=activated,
+            completed=completed,
+            tree=tree,
+            state_type=StateType.MTD,
+        )
+        self.defense = defense
+        self.key = self.serialize()
+
+    def __str__(self):
+        return f"Defense State {self.serialize()}\n" + super().__str__()
+
+    def build(self, graph):
+        if self.key not in graph.states:
+            graph.states[self.key] = self
+            self.build_edges(graph)
+
+    def build_edges(self, graph):
+        # Success edge
+        destination_success_activated = self.get_activated()
+        destination_success_completed = self.get_completed()
+        for reseted_attack in self.defense.parent.attack_childern:
+            if reseted_attack in destination_success_activated:
+                destination_success_activated.remove(reseted_attack)
+        if self.defense.parent.reset and self.defense.parent in destination_success_completed:
+            destination_success_completed.remove(self.defense.parent)
+
+        destination_success = AttackerState(
+            activated=destination_success_activated,
+            completed=destination_success_completed,
+            tree=self.tree,
+        )
+
+        self.edges.append(
+            DefenseEdge(
+                source=self,
+                destination=destination_success,
+                defense=self.defense,
+                success=True,
+            )
+        )
+        destination_success.build(graph=graph)
+
+        # Fail edge
+        self.edges.append(
+            DefenseEdge(
+                source=self,
+                destination=self,
+                defense=self.defense,
+                success=False,
+            )
+        )
+
+    def serialize(self):
+        return super().serialize() + (self.defense.name,)
 
 
 class Edge:
@@ -239,6 +322,28 @@ class CompletionEdge(Edge):
             self.success_probability = attack.success_probability
         else:
             self.success_probability = 1.0 - attack.success_probability
+
+
+class ToDefenseEdge(Edge):
+    def __init__(self, source, destination, defense):
+        super().__init__(source=source, destination=destination)
+        self.defense = defense
+
+
+class DefenseEdge(Edge):
+    def __init__(self, source, destination, defense, success):
+        super().__init__(source=source, destination=destination)
+        self.defense = defense
+        self.success = success
+        if success:
+            self.success_probability = defense.success_probability
+        else:
+            self.success_probability = 1.0 - defense.success_probability
+
+class LoopDefenseEdge(Edge):
+    def __init__(self, source, destination, defense):
+        super().__init__(source=source, destination=destination)
+        self.defense = defense
 
 
 if __name__ == "__main__":
