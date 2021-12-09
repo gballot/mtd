@@ -199,39 +199,43 @@ class Tree:
                 self.goals.append(node)
         self.nodes = self.attacks + self.goals
 
-
-if __name__ == "__main__":
-    root = Goal(
-        children=[
-            Goal(
-                children=[
-                    Attack(
-                        completion_time=10,
-                        success_probability=0.5,
-                        activation_cost=5,
-                        name="a0",
-                    ),
-                    Attack(
-                        completion_time=3, success_probability=0.2, activation_cost=1
-                    ),
-                ],
-                operation_type=OperationType.OR,
-                reset=False,
-                name="g1",
-            ),
-            Attack(
-                completion_time=7,
-                success_probability=0.7,
-                activation_cost=10,
-                name="a2",
-            ),
-            Defense(period=5, success_probability=0.6, name="d0"),
-        ],
-        operation_type=OperationType.AND,
-        reset=True,
-        name="g0",
-    )
-    tree = Tree(root)
-    print(
-        f"parent of {tree.root}'s child {tree.get_children()[1]} is {tree.get_children()[1].parent}"
-    )
+    def reduce_activated_completed(self, activated, completed):
+        # Add parents node that are completed
+        fixed_point = False
+        while not fixed_point:
+            fixed_point = True
+            for node in completed.copy():
+                parent = node.parent
+                if (
+                    parent is not None
+                    and parent not in completed
+                    and not parent.reset
+                    and (parent.operation_type == OperationType.OR
+                        or (
+                            parent.operation_type == OperationType.AND
+                            and {n.name for n in parent.attack_childern} <= {n.name for n in completed}
+                            and {n.name for n in parent.goal_children} <= {n.name for n in completed}
+                    ))
+                ):
+                    fixed_point = False
+                    completed.append(parent)
+                    completed.remove(node)
+        # Remove completed nodes that have a backup above
+        for node in completed.copy():
+            backup = node
+            while backup.parent:
+                backup = backup.parent
+                if backup in completed and not backup.reset:
+                    completed.remove(node)
+                    break
+        # Remove activated nodes that have a backup above
+        for node in activated.copy():
+            if node in completed:
+                activated.remove(node)
+                break
+            backup = node
+            while backup.parent:
+                backup = backup.parent
+                if backup in completed and not backup.reset:
+                    activated.remove(node)
+                    break

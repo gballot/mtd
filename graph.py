@@ -1,5 +1,5 @@
 from enum import Enum
-from tree import Tree, Goal, Attack, Defense, OperationType
+from tree import Tree, Goal, Attack, Defense, OperationType, NodeType
 
 
 class StateType(Enum):
@@ -48,6 +48,14 @@ class State(metaclass=Unique):
         self.edges = edges if edges else list()
         self.activated = activated
         self.completed = completed
+        tree.reduce_activated_completed(self.activated, self.completed)
+        # build subtrees of nodes that doesn't matter anymore
+        self.completed_subtree = []
+        for node in self.completed:
+            if node not in self.completed_subtree and (node.node_type != NodeType.GOAL or not node.reset):
+                self.completed_subtree = [node]
+                decendants = node.dfs(self.completed_subtree)
+
         self.tree = tree
         self.state_type = state_type
 
@@ -101,7 +109,7 @@ class AttackerState(State):
             self.build_completion_edge(attack, graph)
 
         for attack in graph.tree.attacks:
-            if attack not in self.activated:
+            if attack not in self.activated and attack not in self.completed_subtree:
                 self.build_activation_edges(attack, graph)
 
         for completed_node in self.completed:
@@ -264,7 +272,7 @@ if __name__ == "__main__":
             Defense(period=5, success_probability=0.6, name="d0"),
         ],
         operation_type=OperationType.AND,
-        reset=True,
+        reset=False,
         name="g0",
     )
     tree = Tree(root)
