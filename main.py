@@ -4,7 +4,7 @@ from uppaal import UppaalExporter
 
 a0 = Attack(completion_time=100, success_probability=0.66, activation_cost=1, name="a0")
 a1 = Attack(completion_time=10, success_probability=0.1, activation_cost=1, name="a1")
-a2 = Attack(completion_time=10, success_probability=0.5, activation_cost=30, name="a2")
+a2 = Attack(completion_time=10, success_probability=0.5, activation_cost=300, name="a2")
 a3 = Attack(completion_time=700, success_probability=0.95, activation_cost=1, name="a3")
 a4 = Attack(completion_time=200, success_probability=0.75, activation_cost=6, name="a4")
 a5 = Attack(completion_time=20, success_probability=0.66, activation_cost=1, name="a5")

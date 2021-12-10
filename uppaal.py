@@ -66,7 +66,7 @@ class UppaalExporter:
         self.declaration.text = f"""const int n_a = {len(tree.attacks)};
 const int n_d = {len(tree.defenses)};
 hybrid clock time;
-int attack_cost;
+double attack_cost;
 
 clock {list_to_string(attack_names, prefix='x_')};
 const int {list_to_string(attack_names, prefix='t_', values=t_a)};
@@ -191,7 +191,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
                 "label",
                 {"kind": "assignment", "x": str(label_x), "y": str(label_y)},
             )
-            label.text = f"x_{edge.attack.name} = 0,\nattack_cost +=c_{edge.attack.name}"
+            label.text = f"x_{edge.attack.name} = 0,\nattack_cost = attack_cost + c_{edge.attack.name}"
         if edge.type == EdgeType.LOOP_DEFENSE:
             label = etree.SubElement(
                 transition,
@@ -242,7 +242,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         # Fast strategy
         query = etree.SubElement(queries, "query")
         formula = etree.SubElement(query, "formula")
-        formula.text = f"strategy fast = minE(time)[<=100]: <>{goal_name}"
+        formula.text = f"strategy fast = minE(time)[<=1000]: <>{goal_name}"
         comment = etree.SubElement(query, "comment")
         comment.text = "Fast strategy"
         # Expected time under fast
@@ -269,7 +269,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         # Cheap strategy
         query = etree.SubElement(queries, "query")
         formula = etree.SubElement(query, "formula")
-        formula.text = f"strategy cheap = minE(time)[<=100]: <>{goal_name}"
+        formula.text = f"strategy cheap = minE(attack_cost)[<=1000]: <>{goal_name}"
         comment = etree.SubElement(query, "comment")
         comment.text = "Cheap strategy"
         # Expected time under cheap

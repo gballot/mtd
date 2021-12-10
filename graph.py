@@ -72,11 +72,10 @@ class State(metaclass=Unique):
         # Build subtrees of nodes that doesn't matter anymore
         self.completed_subtree = []
         for node in self.completed:
-            if node not in self.completed_subtree and (
-                node.node_type != NodeType.GOAL or not node.reset
-            ):
-                self.completed_subtree = [node]
-                decendants = node.dfs(self.completed_subtree)
+            if node not in self.completed_subtree:
+                self.completed_subtree += [node]
+                if node.node_type == NodeType.GOAL and not node.reset:
+                    node.dfs(self.completed_subtree)
 
         # Build list of defenses that matter
         self.active_defenses = []
