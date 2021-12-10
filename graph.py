@@ -19,6 +19,7 @@ class Graph:
             activated=[],
             completed=[],
             tree=self.tree,
+            initial=True,
         ).build(graph=self)
 
     def __str__(self):
@@ -49,10 +50,13 @@ class Unique(type):
 
 
 class State(metaclass=Unique):
-    def __init__(self, activated, completed, tree, state_type=None, edges=None):
+    def __init__(
+        self, activated, completed, tree, state_type=None, edges=None, initial=False
+    ):
         self.edges = edges if edges else list()
         self.activated = activated
         self.completed = completed
+        self.initial = initial
         tree.reduce_activated_completed(self.activated, self.completed)
         # Build subtrees of nodes that doesn't matter anymore
         self.completed_subtree = []
@@ -111,12 +115,13 @@ class State(metaclass=Unique):
 
 
 class AttackerState(State):
-    def __init__(self, activated, completed, tree):
+    def __init__(self, activated, completed, tree, initial=False):
         super().__init__(
             activated=activated,
             completed=completed,
             tree=tree,
             state_type=StateType.NORMAL,
+            initial=initial,
         )
         self.key = self.serialize()
 
@@ -181,12 +186,13 @@ class AttackerState(State):
 
 
 class CompletionState(State):
-    def __init__(self, activated, completed, new_completed, tree):
+    def __init__(self, activated, completed, new_completed, tree, initial=False):
         super().__init__(
             activated=activated,
             completed=completed,
             tree=tree,
             state_type=StateType.COMPLETION,
+            initial=initial,
         )
         self.new_completed = new_completed
         self.key = self.serialize()
@@ -248,12 +254,13 @@ class CompletionState(State):
 
 
 class DefenseState(State):
-    def __init__(self, activated, completed, defense, tree):
+    def __init__(self, activated, completed, defense, tree, initial=False):
         super().__init__(
             activated=activated,
             completed=completed,
             tree=tree,
             state_type=StateType.MTD,
+            initial=initial,
         )
         self.defense = defense
         self.key = self.serialize()
