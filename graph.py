@@ -24,12 +24,13 @@ class Graph:
         self.build_graph()
 
     def build_graph(self):
-        AttackerState(
+        self.initial_state = AttackerState(
             activated=[],
             completed=[],
             tree=self.tree,
             initial=True,
-        ).build(graph=self)
+        )
+        self.initial_state.build(graph=self)
 
     def __str__(self):
         edges_number = 0
@@ -60,12 +61,13 @@ class Unique(type):
 
 class State(metaclass=Unique):
     def __init__(
-        self, activated, completed, tree, state_type=None, edges=None, initial=False
+        self, activated, completed, tree, state_type=None, edges=None, initial=False, acceping=False
     ):
         self.edges = edges if edges else list()
         self.activated = activated
         self.completed = completed
         self.initial = initial
+        self.acceping = acceping
         tree.reduce_activated_completed(self.activated, self.completed)
         # Build subtrees of nodes that doesn't matter anymore
         self.completed_subtree = []
@@ -124,15 +126,19 @@ class State(metaclass=Unique):
 
 
 class AttackerState(State):
-    def __init__(self, activated, completed, tree, initial=False):
+    def __init__(self, activated, completed, tree, initial=False, acceping=False):
         super().__init__(
             activated=activated,
             completed=completed,
             tree=tree,
             state_type=StateType.NORMAL,
             initial=initial,
+            acceping=acceping
         )
         self.key = self.serialize()
+        if len(self.completed) > 0 and self.completed[0].name == tree.root.name:
+            self.acceping = True
+
 
     def __str__(self):
         return f"Attacker State {self.serialize()}\n" + super().__str__()
@@ -141,6 +147,9 @@ class AttackerState(State):
         if self.key not in graph.states:
             graph.states[self.key] = self
             self.build_edges(graph)
+            if self.acceping:
+                graph.acceping_state = self
+
 
     def build_edges(self, graph):
         for attack in self.activated:
