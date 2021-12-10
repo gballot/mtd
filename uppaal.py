@@ -141,15 +141,15 @@ const int {list_to_string(defense_names, prefix='p_', values=p_d)};
 
     def make_label(self, state, location, x, y):
         # Make defense clocks guards
-        if len(state.active_defenses) > 0:
-            defense_name = state.active_defenses[0].name
+        if len(graph.tree.defenses) > 0:
+            defense_name = graph.tree.defenses[0].name
             label = etree.SubElement(
                 location,
                 "label",
                 {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
             )
             invariant = f"x_{defense_name} <= t_{defense_name}"
-            for defense in state.active_defenses[1:]:
+            for defense in graph.tree.defenses[1:]:
                 invariant += f"&&\nx_{defense.name} <= t_{defense.name}"
             label.text = invariant
         # Make active attacks clocks guards
