@@ -8,6 +8,15 @@ class StateType(Enum):
     COMPLETION = 3
 
 
+class EdgeType(Enum):
+    ACTIVATION = 1
+    TO_COMPLETION = 2
+    COMPLETION = 3
+    TO_DEFENSE = 4
+    DEFENSE = 5
+    LOOP_DEFENSE = 6
+
+
 class Graph:
     def __init__(self, tree):
         self.tree = tree
@@ -333,12 +342,14 @@ class ActivationEdge(Edge):
     def __init__(self, source, destination, attack):
         super().__init__(source=source, destination=destination)
         self.attack = attack
+        self.type = EdgeType.ACTIVATION
 
 
 class ToCompletionEdge(Edge):
     def __init__(self, source, destination, attack):
         super().__init__(source=source, destination=destination)
         self.attack = attack
+        self.type = EdgeType.TO_COMPLETION
 
 
 class CompletionEdge(Edge):
@@ -350,12 +361,14 @@ class CompletionEdge(Edge):
             self.success_probability = attack.success_probability
         else:
             self.success_probability = 1.0 - attack.success_probability
+        self.type = EdgeType.COMPLETION
 
 
 class ToDefenseEdge(Edge):
     def __init__(self, source, destination, defense):
         super().__init__(source=source, destination=destination)
         self.defense = defense
+        self.type = EdgeType.TO_DEFENSE
 
 
 class DefenseEdge(Edge):
@@ -367,12 +380,14 @@ class DefenseEdge(Edge):
             self.success_probability = defense.success_probability
         else:
             self.success_probability = 1.0 - defense.success_probability
+        self.type = EdgeType.DEFENSE
 
 
 class LoopDefenseEdge(Edge):
     def __init__(self, source, destination, defense):
         super().__init__(source=source, destination=destination)
         self.defense = defense
+        self.type = EdgeType.LOOP_DEFENSE
 
 
 if __name__ == "__main__":

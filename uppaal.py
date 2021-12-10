@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as etree
-from graph import Graph, StateType
+from graph import Graph, StateType, EdgeType
 from tree import Tree, Goal, Attack, Defense, OperationType
 
 
@@ -20,6 +20,10 @@ def list_to_string(names, prefix="", values=None):
 class UppaalExporter:
     output_file = None
     state_id = 0
+    id_to_serial = dict()
+    serial_to_id = dict()
+    serial_to_position = dict()
+    dx, dy, lx = 100, 100, 8
 
     def __init__(self, graph, output_file_name):
         self.graph = graph
@@ -80,15 +84,28 @@ const int {list_to_string(defense_names, prefix='p_', values=p_d)};
         etree.SubElement(template, "declaration")
         states = self.graph.states
         for state in states.values():
-            state_id = self.make_state(state, template)
-            if state_id:
-                initial_state_id = state_id
+            if state.state_type == StateType.NORMAL:
+                state_id = self.make_location(state, template)
+                if state_id:
+                    initial_state_id = state_id
+        for state in states.values():
+            if state.state_type != StateType.NORMAL:
+                self.make_branchpoint(state, template)
         initial = etree.SubElement(template, "init")
+        for state in states.values():
+            for edge in state.edges:
+                self.make_transition(edge, template)
+
         initial.set("ref", initial_state_id)
 
-    def make_state(self, state, template):
-        dx, dy, lx = 100, 100, 8
-        location_x, location_y = dx * (self.state_id // lx), dy * (self.state_id % lx)
+    def make_location(self, state, template):
+        self.serial_to_id[state.serialize()] = f"id{self.state_id}"
+        self.id_to_serial[f"id{self.state_id}"] = state.serialize()
+        location_x, location_y = self.dx * (self.state_id // self.lx), self.dy * (
+            self.state_id % self.lx
+        )
+        self.serial_to_position[state.serialize()] = (location_x, location_y)
+
         initial_state_id = None
         location = etree.SubElement(template, "location")
         location.set("id", f"id{self.state_id}")
@@ -102,37 +119,100 @@ const int {list_to_string(defense_names, prefix='p_', values=p_d)};
             for e in state.serialize()
         )
         self.make_label(state, location, location_x, location_y)
+
         if state.initial:
             initial_state_id = f"id{self.state_id}"
         self.state_id += 1
         return initial_state_id
 
+    def make_branchpoint(self, state, template):
+        self.serial_to_id[state.serialize()] = f"id{self.state_id}"
+        self.id_to_serial[f"id{self.state_id}"] = state.serialize()
+        branchpoint_x, branchpoint_y = self.dx * (self.state_id // self.lx), self.dy * (
+            self.state_id % self.lx
+        )
+        self.serial_to_position[state.serialize()] = (branchpoint_x, branchpoint_y)
+
+        branchpoint = etree.SubElement(template, "branchpoint")
+        branchpoint.set("id", f"id{self.state_id}")
+        branchpoint.set("x", str(branchpoint_x))
+        branchpoint.set("y", str(branchpoint_y))
+        self.state_id += 1
+
     def make_label(self, state, location, x, y):
-        if state.state_type == StateType.NORMAL:
-            # Make defense clocks guards
-            if len(state.active_defenses) > 0:
-                defense_name = state.active_defenses[0].name
-                label = etree.SubElement(
-                    location,
-                    "label",
-                    {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
-                )
-                invariant = f"x_{defense_name} <= t_{defense_name}"
-                for defense in state.active_defenses[1:]:
-                    invariant += f"&&\nx_{defense.name} <= t_{defense.name}"
-                label.text = invariant
-            # Make active attacks clocks guards
-            if len(state.activated) > 0:
-                activated_name = state.activated[0].name
-                label = etree.SubElement(
-                    location,
-                    "label",
-                    {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
-                )
-                invariant = f"x_{activated_name} <= t_{activated_name}"
-                for activated in state.activated[1:]:
-                    invariant += f"&&\nx_{activated.name} <= t_{activated.name}"
-                label.text = invariant
+        # Make defense clocks guards
+        if len(state.active_defenses) > 0:
+            defense_name = state.active_defenses[0].name
+            label = etree.SubElement(
+                location,
+                "label",
+                {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
+            )
+            invariant = f"x_{defense_name} <= t_{defense_name}"
+            for defense in state.active_defenses[1:]:
+                invariant += f"&&\nx_{defense.name} <= t_{defense.name}"
+            label.text = invariant
+        # Make active attacks clocks guards
+        if len(state.activated) > 0:
+            activated_name = state.activated[0].name
+            label = etree.SubElement(
+                location,
+                "label",
+                {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
+            )
+            invariant = f"x_{activated_name} <= t_{activated_name}"
+            for activated in state.activated[1:]:
+                invariant += f"&&\nx_{activated.name} <= t_{activated.name}"
+            label.text = invariant
+
+    def make_transition(self, edge, template):
+        transition = etree.SubElement(template, "transition")
+        source = etree.SubElement(
+            transition, "source", {"ref": self.serial_to_id[edge.source.serialize()]}
+        )
+        target = etree.SubElement(
+            transition,
+            "target",
+            {"ref": self.serial_to_id[edge.destination.serialize()]},
+        )
+        source_x, source_y = self.serial_to_position[edge.source.serialize()]
+        target_x, target_y = self.serial_to_position[edge.destination.serialize()]
+        label_x, label_y = (source_x + target_x) // 2, (source_y + target_y) // 2
+        if edge.type == EdgeType.ACTIVATION:
+            label = etree.SubElement(
+                transition,
+                "label",
+                {"kind": "assignment", "x": str(label_x), "y": str(label_y)},
+            )
+            label.text = f"x_{edge.attack.name} = 0"
+        if edge.type == EdgeType.LOOP_DEFENSE:
+            label = etree.SubElement(
+                transition,
+                "label",
+                {"kind": "assignment", "x": str(label_x), "y": str(label_y)},
+            )
+            label.text = f"x_{edge.defense.name} = 0"
+        if edge.type == EdgeType.TO_COMPLETION:
+            label = etree.SubElement(
+                transition,
+                "label",
+                {"kind": "guard", "x": str(label_x), "y": str(label_y)},
+            )
+            label.text = f"x_{edge.attack.name} >= t_{edge.attack.name}"
+        if edge.type == EdgeType.TO_DEFENSE:
+            label = etree.SubElement(
+                transition,
+                "label",
+                {"kind": "guard", "x": str(label_x), "y": str(label_y)},
+            )
+            label.text = f"x_{edge.defense.name} >= t_{edge.defense.name}"
+        if edge.type == EdgeType.COMPLETION or edge.type == EdgeType.DEFENSE:
+            label = etree.SubElement(
+                transition,
+                "label",
+                {"kind": "probability", "x": str(label_x), "y": str(label_y)},
+            )
+            label.text = str(int(edge.success_probability * 1000))
 
 
 if __name__ == "__main__":
