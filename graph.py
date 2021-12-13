@@ -61,13 +61,13 @@ class Unique(type):
 
 class State(metaclass=Unique):
     def __init__(
-        self, activated, completed, tree, state_type=None, edges=None, initial=False, acceping=False
+        self, activated, completed, tree, state_type=None, edges=None, initial=False, accepting=False
     ):
         self.edges = edges if edges else list()
         self.activated = activated
         self.completed = completed
         self.initial = initial
-        self.acceping = acceping
+        self.accepting = accepting
         tree.reduce_activated_completed(self.activated, self.completed)
         # Build subtrees of nodes that doesn't matter anymore
         self.completed_subtree = []
@@ -125,18 +125,18 @@ class State(metaclass=Unique):
 
 
 class AttackerState(State):
-    def __init__(self, activated, completed, tree, initial=False, acceping=False):
+    def __init__(self, activated, completed, tree, initial=False, accepting=False):
         super().__init__(
             activated=activated,
             completed=completed,
             tree=tree,
             state_type=StateType.NORMAL,
             initial=initial,
-            acceping=acceping
+            accepting=accepting
         )
         self.key = self.serialize()
         if len(self.completed) > 0 and self.completed[0].name == tree.root.name:
-            self.acceping = True
+            self.accepting = True
 
 
     def __str__(self):
@@ -146,8 +146,8 @@ class AttackerState(State):
         if self.key not in graph.states:
             graph.states[self.key] = self
             self.build_edges(graph)
-            if self.acceping:
-                graph.acceping_state = self
+            if self.accepting:
+                graph.accepting_state = self
 
 
     def build_edges(self, graph):
