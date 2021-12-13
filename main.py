@@ -26,6 +26,7 @@ g3 = Goal(children=[d1, g4], operation_type=OperationType.AND, reset=True, name=
 g2 = Goal(children=[a3, g3], operation_type=OperationType.OR, name="g2")
 gt = Goal(children=[g1, g2], operation_type=OperationType.OR, name="gt")
 
+
 tree = Tree(gt)
 graph = Graph(tree)
 print(graph)

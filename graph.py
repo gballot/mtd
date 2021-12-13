@@ -6,6 +6,7 @@ class StateType(Enum):
     NORMAL = 1
     MTD = 2
     COMPLETION = 3
+    NO_ACTIVATION = 4
 
 
 class EdgeType(Enum):
@@ -15,6 +16,7 @@ class EdgeType(Enum):
     TO_DEFENSE = 4
     DEFENSE = 5
     LOOP_DEFENSE = 6
+    NO_ACTIVATION = 7
 
 
 class Graph:
@@ -161,17 +163,29 @@ class AttackerState(State):
             if self.accepting:
                 graph.accepting_state = self
 
-
     def build_edges(self, graph):
-        for attack in self.activated:
-            self.build_completion_edge(attack, graph)
-
         for attack in graph.tree.attacks:
             if attack not in self.activated and attack not in self.completed_subtree:
                 self.build_activation_edges(attack, graph)
 
-        for defense in self.tree.defenses:
-            self.build_defense_edge(defense, graph)
+        # No activation edge
+        if len(self.activated) > 0 or any(
+            [
+                (
+                    node.node_type == NodeType.ATTACK
+                    and node.parent.defense_child is not None
+                )
+                or (node.node_type == NodeType.GOAL and node.reset)
+                for node in self.completed
+            ]
+        ):
+            destination = NoActivationState(
+                activated=self.get_activated(),
+                completed=self.get_completed(),
+                tree=self.tree,
+            )
+            self.edges.append(NoActivationEdge(source=self, destination=destination))
+            destination.build(graph=graph)
 
     def build_activation_edges(self, attack, graph):
         destination = AttackerState(
@@ -183,35 +197,6 @@ class AttackerState(State):
             ActivationEdge(source=self, destination=destination, attack=attack)
         )
         destination.build(graph=graph)
-
-    def build_completion_edge(self, attack, graph):
-        destination = CompletionState(
-            activated=self.get_activated(),
-            completed=self.get_completed(),
-            new_completed=attack,
-            tree=self.tree,
-        )
-        self.edges.append(
-            ToCompletionEdge(source=self, destination=destination, attack=attack)
-        )
-        destination.build(graph=graph)
-
-    def build_defense_edge(self, defense, graph):
-        if defense in self.active_defenses:
-            destination = DefenseState(
-                activated=self.get_activated(),
-                completed=self.get_completed(),
-                defense=defense,
-                tree=self.tree,
-            )
-            self.edges.append(
-                ToDefenseEdge(source=self, destination=destination, defense=defense)
-            )
-            destination.build(graph=graph)
-        else:
-            self.edges.append(
-                LoopDefenseEdge(source=self, destination=self, defense=defense)
-            )
 
 
 class CompletionState(State):
@@ -351,6 +336,62 @@ class DefenseState(State):
         return super().serialize() + (self.defense.name,)
 
 
+class NoActivationState(State):
+    def __init__(self, activated, completed, tree, initial=False):
+        super().__init__(
+            activated=activated,
+            completed=completed,
+            tree=tree,
+            state_type=StateType.NO_ACTIVATION,
+            initial=initial,
+        )
+        self.key = self.serialize()
+
+    def __str__(self):
+        return f"No activation State {self.serialize()}\n" + super().__str__()
+
+    def build(self, graph):
+        if self.key not in graph.states:
+            graph.states[self.key] = self
+            self.build_edges(graph)
+
+    def build_edges(self, graph):
+        for attack in self.activated:
+            self.build_completion_edge(attack, graph)
+
+        for defense in self.tree.defenses:
+            self.build_defense_edge(defense, graph)
+
+    def build_completion_edge(self, attack, graph):
+        destination = CompletionState(
+            activated=self.get_activated(),
+            completed=self.get_completed(),
+            new_completed=attack,
+            tree=self.tree,
+        )
+        self.edges.append(
+            ToCompletionEdge(source=self, destination=destination, attack=attack)
+        )
+        destination.build(graph=graph)
+
+    def build_defense_edge(self, defense, graph):
+        if defense in self.active_defenses:
+            destination = DefenseState(
+                activated=self.get_activated(),
+                completed=self.get_completed(),
+                defense=defense,
+                tree=self.tree,
+            )
+            self.edges.append(
+                ToDefenseEdge(source=self, destination=destination, defense=defense)
+            )
+            destination.build(graph=graph)
+        else:
+            self.edges.append(
+                LoopDefenseEdge(source=self, destination=self, defense=defense)
+            )
+
+
 class Edge:
     def __init__(self, source, destination):
         assert source is not None and destination is not None
@@ -408,6 +449,12 @@ class LoopDefenseEdge(Edge):
         super().__init__(source=source, destination=destination)
         self.defense = defense
         self.type = EdgeType.LOOP_DEFENSE
+
+
+class NoActivationEdge(Edge):
+    def __init__(self, source, destination):
+        super().__init__(source=source, destination=destination)
+        self.type = EdgeType.NO_ACTIVATION
 
 
 if __name__ == "__main__":

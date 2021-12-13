@@ -90,12 +90,18 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         etree.SubElement(template, "declaration")
         states = self.graph.states
         for state in states.values():
-            if state.state_type == StateType.NORMAL:
+            if (
+                state.state_type == StateType.NORMAL
+                or state.state_type == StateType.NO_ACTIVATION
+            ):
                 state_id = self.make_location(state, template)
                 if state_id:
                     initial_state_id = state_id
         for state in states.values():
-            if state.state_type != StateType.NORMAL:
+            if (
+                state.state_type != StateType.NORMAL
+                and state.state_type != StateType.NO_ACTIVATION
+            ):
                 self.make_branchpoint(state, template)
         initial = etree.SubElement(template, "init")
         for state in states.values():
@@ -146,37 +152,46 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         self.state_id += 1
 
     def make_label(self, state, location, x, y):
-        # Stop time of goal
-        if state.accepting:
+        if state.state_type == StateType.NORMAL:
+            # Stop time of goal
+            if state.accepting:
+                label = etree.SubElement(
+                    location,
+                    "label",
+                    {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
+                )
+                label.text = f"time' == 0"
+            # Make urgent
+            if not state.accepting:
+                urgent = etree.SubElement(location, "urgent")
+
+        elif state.state_type == StateType.NO_ACTIVATION:
+            if len(self.graph.tree.defenses) == 0 and len(state.activated) == 0:
+                return
             label = etree.SubElement(
                 location,
                 "label",
                 {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
             )
-            label.text = f"time' == 0"
-
-        if len(self.graph.tree.defenses) == 0 and len(state.activated) == 0:
-            return
-        label = etree.SubElement(
-            location,
-            "label",
-            {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
-        )
-        # Make defense clocks guards
-        if len(self.graph.tree.defenses) > 0:
-            defense_name = self.graph.tree.defenses[0].name
-            invariant = f"x_{defense_name} <= t_{defense_name}"
-            for defense in self.graph.tree.defenses[1:]:
-                invariant += f"&&\nx_{defense.name} <= t_{defense.name}"
-        # Make active attacks clocks guards
-        if len(self.graph.tree.defenses) == 0:
-            invariant = f"x_{state.activated[0].name} <= t_{state.activated[0].name}"
-        elif len(state.activated) > 0:
-            invariant += f"&&\nx_{state.activated[0].name} <= t_{state.activated[0].name}"
-        if len(state.activated) > 0:
-            for activated in state.activated[1:]:
-                invariant += f"&&\nx_{activated.name} <= t_{activated.name}"
-        label.text = invariant
+            # Make defense clocks guards
+            if len(self.graph.tree.defenses) > 0:
+                defense_name = self.graph.tree.defenses[0].name
+                invariant = f"x_{defense_name} <= t_{defense_name}"
+                for defense in self.graph.tree.defenses[1:]:
+                    invariant += f"&&\nx_{defense.name} <= t_{defense.name}"
+            # Make active attacks clocks guards
+            if len(self.graph.tree.defenses) == 0:
+                invariant = (
+                    f"x_{state.activated[0].name} <= t_{state.activated[0].name}"
+                )
+            elif len(state.activated) > 0:
+                invariant += (
+                    f"&&\nx_{state.activated[0].name} <= t_{state.activated[0].name}"
+                )
+            if len(state.activated) > 0:
+                for activated in state.activated[1:]:
+                    invariant += f"&&\nx_{activated.name} <= t_{activated.name}"
+            label.text = invariant
 
     def make_transition(self, edge, template):
         transition = etree.SubElement(template, "transition")
