@@ -112,7 +112,6 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         )
         self.serial_to_position[state.serialize()] = (location_x, location_y)
 
-        initial_state_id = None
         location = etree.SubElement(template, "location")
         location.set("id", f"id{self.state_id}")
         location.set("x", str(location_x))
@@ -127,8 +126,8 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         self.serial_to_location_name[state.serialize()] = location_name.text
         self.make_label(state, location, location_x, location_y)
 
-        if state.initial:
-            initial_state_id = f"id{self.state_id}"
+        initial_state_id = f"id{self.state_id}" if state.initial else None
+
         self.state_id += 1
         return initial_state_id
 

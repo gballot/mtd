@@ -61,7 +61,14 @@ class Unique(type):
 
 class State(metaclass=Unique):
     def __init__(
-        self, activated, completed, tree, state_type=None, edges=None, initial=False, accepting=False
+        self,
+        activated,
+        completed,
+        tree,
+        state_type=None,
+        edges=None,
+        initial=False,
+        accepting=False,
     ):
         self.edges = edges if edges else list()
         self.activated = activated
@@ -93,6 +100,12 @@ class State(metaclass=Unique):
                 and node.reset
             ):
                 self.active_defenses.append(node.defense_child)
+            if (
+                node.node_type == NodeType.ATTACK
+                and node.parent is not None
+                and node.parent.defense_child is not None
+            ):
+                self.active_defenses.append(node.parent.defense_child)
 
         self.tree = tree
         self.state_type = state_type
@@ -132,12 +145,11 @@ class AttackerState(State):
             tree=tree,
             state_type=StateType.NORMAL,
             initial=initial,
-            accepting=accepting
+            accepting=accepting,
         )
         self.key = self.serialize()
         if len(self.completed) > 0 and self.completed[0].name == tree.root.name:
             self.accepting = True
-
 
     def __str__(self):
         return f"Attacker State {self.serialize()}\n" + super().__str__()
