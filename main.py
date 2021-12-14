@@ -11,10 +11,10 @@ a5 = Attack(completion_time=20, success_probability=0.66, activation_cost=1, nam
 a6 = Attack(completion_time=100, success_probability=0.9, activation_cost=1, name="a6")
 a7 = Attack(completion_time=30, success_probability=0.1, activation_cost=1, name="a7")
 
-d0 = Defense(period=50, success_probability=0.6, name="d0")
-d1 = Defense(period=40, success_probability=0.8, name="d1")
-d2 = Defense(period=40, success_probability=0.3, name="d2")
-d3 = Defense(period=20, success_probability=0.7, name="d3")
+d0 = Defense(period=50, success_probability=0.6, name="d0", cost=1)
+d1 = Defense(period=40, success_probability=0.8, name="d1", cost=1)
+d2 = Defense(period=40, success_probability=0.3, name="d2", cost=1)
+d3 = Defense(period=20, success_probability=0.7, name="d3", cost=1)
 
 g0 = Goal(children=[d0, a0, a1], operation_type=OperationType.AND, reset=False, name="g0")
 g1 = Goal(children=[g0, a2], operation_type=OperationType.OR, name="g1")
@@ -26,8 +26,9 @@ g3 = Goal(children=[d1, g4], operation_type=OperationType.AND, reset=True, name=
 g2 = Goal(children=[a3, g3], operation_type=OperationType.OR, name="g2")
 gt = Goal(children=[g1, g2], operation_type=OperationType.OR, name="gt")
 
+gtest = Goal(children=[a1, a0], operation_type=OperationType.OR, name="gt")
 
-tree = Tree(gt)
+tree = Tree(gtest)
 graph = Graph(tree)
 print(graph)
 uppaal = UppaalExporter(graph, "output.xml")

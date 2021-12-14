@@ -90,13 +90,13 @@ class Node:
 class Goal(Node):
     def __init__(
         self,
+        name,
+        operation_type,
         children=None,
         defense_child=None,
         attack_childern=None,
         goal_children=None,
-        operation_type=None,
         reset=False,
-        name=None,
         parent=None,
     ):
         if children:
@@ -130,10 +130,11 @@ class Goal(Node):
 class Attack(Node):
     def __init__(
         self,
-        completion_time=None,
-        success_probability=None,
+        completion_time,
+        success_probability,
+        name,
         activation_cost=None,
-        name=None,
+        proportional_cost=None,
         parent=None,
     ):
         super().__init__(
@@ -148,7 +149,7 @@ class Attack(Node):
 
 class Defense(Node):
     def __init__(
-        self, period=None, success_probability=None, cost=None, name=None, parent=None
+        self, period, success_probability, cost, name, parent=None
     ):
         super().__init__(
             parent=parent,

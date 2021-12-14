@@ -7,6 +7,7 @@ class StateType(Enum):
     MTD = 2
     COMPLETION = 3
     NO_ACTIVATION = 4
+    PROPORTIONAL_COST = 5
 
 
 class EdgeType(Enum):
@@ -17,6 +18,7 @@ class EdgeType(Enum):
     DEFENSE = 5
     LOOP_DEFENSE = 6
     NO_ACTIVATION = 7
+    TO_PROPORTIONAL_COST = 8
 
 
 class Graph:
@@ -166,7 +168,10 @@ class AttackerState(State):
     def build_edges(self, graph):
         for attack in graph.tree.attacks:
             if attack not in self.activated and attack not in self.completed_subtree:
-                self.build_activation_edges(attack, graph)
+                if attack.proportional_cost is None:
+                    self.build_activation_edges(attack, graph)
+                else:
+                    self.build_proportial_cost_edge(attack, graph)
 
         # No activation edge
         if len(self.activated) > 0 or any(
@@ -197,6 +202,10 @@ class AttackerState(State):
             ActivationEdge(source=self, destination=destination, attack=attack)
         )
         destination.build(graph=graph)
+
+    def build_proportial_cost_edge(self, attack, graph):
+        #TODO
+        pass
 
 
 class CompletionState(State):
