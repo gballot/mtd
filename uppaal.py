@@ -6,13 +6,13 @@ from tree import Tree, Goal, Attack, Defense, OperationType
 def list_to_string(names, prefix="", values=None):
     if len(names) == 0:
         return ""
-    string = f"{prefix}{names[0]}"
-    if values is not None:
-        string += f" = {values[0]}"
-
-    for i in range(1, len(names)):
-        string += f", {prefix}{names[i]}"
-        if values is not None:
+    connector = ""
+    string = ""
+    for i in range(len(names)):
+        if values is None or values[i] is not None:
+            string += f"{connector}{prefix}{names[i]}"
+            connector = ", "
+        if values is not None and values[i] is not None:
             string += f" = {values[i]}"
     return string
 
@@ -59,6 +59,7 @@ class UppaalExporter:
         t_a = [attack.completion_time for attack in tree.attacks]
         p_a = [attack.success_probability for attack in tree.attacks]
         c_a = [attack.activation_cost for attack in tree.attacks]
+        cp_a = [attack.proportional_cost for attack in tree.attacks]
         t_d = [defense.period for defense in tree.defenses]
         p_d = [defense.success_probability for defense in tree.defenses]
 
@@ -66,16 +67,23 @@ class UppaalExporter:
         self.declaration.text = f"""const int n_a = {len(tree.attacks)};
 const int n_d = {len(tree.defenses)};
 hybrid clock time;
-double attack_cost;
+hybrid clock cost;
 
-clock {list_to_string(attack_names, prefix='x_')};
+hybrid clock xcost;
+
+hybrid clock {list_to_string(attack_names, prefix='x_')};
 const int {list_to_string(attack_names, prefix='t_', values=t_a)};
 //const int {list_to_string(attack_names, prefix='p_', values=p_a)};
 const int {list_to_string(attack_names, prefix='c_', values=c_a)};
 """
+        if any(cp_a):
+            self.declaration.text += (
+                f"const int {list_to_string(attack_names, prefix='cp_', values=cp_a)};"
+            )
+
         if len(defense_names) > 0:
             self.declaration.text += f"""
-clock {list_to_string(defense_names, prefix='x_')};
+hybrid clock {list_to_string(defense_names, prefix='x_')};
 const int {list_to_string(defense_names, prefix='t_', values=t_d)};
 //const int {list_to_string(defense_names, prefix='p_', values=p_d)};
 """
@@ -93,6 +101,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
             if (
                 state.state_type == StateType.NORMAL
                 or state.state_type == StateType.NO_ACTIVATION
+                or state.state_type == StateType.ACTIVATION_COST
             ):
                 state_id = self.make_location(state, template)
                 if state_id:
@@ -101,6 +110,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
             if (
                 state.state_type != StateType.NORMAL
                 and state.state_type != StateType.NO_ACTIVATION
+                and state.state_type != StateType.ACTIVATION_COST
             ):
                 self.make_branchpoint(state, template)
         initial = etree.SubElement(template, "init")
@@ -159,34 +169,42 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
                 "label",
                 {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
             )
-            label.text = f"time' == 0"
+            label.text = f"time' == 0 && cost' == 0"
             return
 
-        if len(self.graph.tree.defenses) == 0 and len(state.activated) == 0:
-            return
         label = etree.SubElement(
             location,
             "label",
             {"kind": "invariant", "x": str(x - 50), "y": str(y + 20)},
         )
-        # Make defense clocks guards
-        if len(self.graph.tree.defenses) > 0:
-            defense_name = self.graph.tree.defenses[0].name
-            invariant = f"x_{defense_name} <= t_{defense_name}"
-            for defense in self.graph.tree.defenses[1:]:
-                invariant += f"&&\nx_{defense.name} <= t_{defense.name}"
-        # Make active attacks clocks guards
-        if len(self.graph.tree.defenses) == 0:
+        if (
+            state.state_type == StateType.NO_ACTIVATION
+            or state.state_type == StateType.NORMAL
+        ):
+            # Make proportial cost invariant
+            invariant = "cost' =="
+            cost_connector = " "
+            for attack in state.activated:
+                if attack.proportional_cost is not None:
+                    invariant += f"{cost_connector}cp_{attack.name}"
+                    cost_connector = " + "
+            if cost_connector == " ":
+                invariant += " 0"
+            # Make defense clocks guards
+            for defense in self.graph.tree.defenses:
+                invariant += f" &&\nx_{defense.name} <= t_{defense.name}"
+            # Make active attacks clocks guards
+            for activated in state.activated:
+                invariant += f" &&\nx_{activated.name} <= t_{activated.name}"
+        elif state.state_type == StateType.ACTIVATION_COST:
             invariant = (
-                f"x_{state.activated[0].name} <= t_{state.activated[0].name}"
+                f"time' == 0 &&\nxcost <= 1 &&\ncost' == {state.attack.activation_cost}"
             )
-        elif len(state.activated) > 0:
-            invariant += (
-                f"&&\nx_{state.activated[0].name} <= t_{state.activated[0].name}"
-            )
-        if len(state.activated) > 0:
-            for activated in state.activated[1:]:
-                invariant += f"&&\nx_{activated.name} <= t_{activated.name}"
+            for attack in self.graph.tree.attacks:
+                invariant += f" &&\nx_{attack.name}' == 0"
+            for defense in self.graph.tree.defenses:
+                invariant += f" &&\nx_{defense.name}' == 0"
+
         label.text = invariant
 
     def make_transition(self, edge, template):
@@ -208,7 +226,15 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
                 "label",
                 {"kind": "assignment", "x": str(label_x), "y": str(label_y)},
             )
-            label.text = f"x_{edge.attack.name} = 0,\nattack_cost = attack_cost + c_{edge.attack.name}"
+            label.text = f"x_{edge.attack.name} = 0"
+            if edge.source.state_type == StateType.ACTIVATION_COST:
+                transition.set("controllable", "false")
+                label = etree.SubElement(
+                    transition,
+                    "label",
+                    {"kind": "guard", "x": str(label_x), "y": str(label_y)},
+                )
+                label.text = f"xcost >= 1"
         if edge.type == EdgeType.LOOP_DEFENSE:
             label = etree.SubElement(
                 transition,
@@ -251,6 +277,13 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
                 {"kind": "probability", "x": str(label_x), "y": str(label_y)},
             )
             label.text = str(int(edge.success_probability * 1000))
+        if edge.type == EdgeType.TO_ACTIVATION_COST:
+            label = etree.SubElement(
+                transition,
+                "label",
+                {"kind": "assignment", "x": str(label_x), "y": str(label_y)},
+            )
+            label.text = "xcost = 0"
 
     def make_queries(self):
         goal_name = self.serial_to_location_name[self.graph.accepting_state.serialize()]
@@ -271,7 +304,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         # Expected cost under fast
         query = etree.SubElement(queries, "query")
         formula = etree.SubElement(query, "formula")
-        formula.text = f"E[<=1000;500](max: attack_cost) under fast"
+        formula.text = f"E[<=1000;500](max: cost) under fast"
         comment = etree.SubElement(query, "comment")
         comment.text = "Expected cost under fast"
         # Success probability under fast
@@ -286,7 +319,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         # Cheap strategy
         query = etree.SubElement(queries, "query")
         formula = etree.SubElement(query, "formula")
-        formula.text = f"strategy cheap = minE(attack_cost)[<=1000]: <>{goal_name}"
+        formula.text = f"strategy cheap = minE(cost)[<=1000]: <>{goal_name}"
         comment = etree.SubElement(query, "comment")
         comment.text = "Cheap strategy"
         # Expected time under cheap
@@ -298,7 +331,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         # Expected cost under cheap
         query = etree.SubElement(queries, "query")
         formula = etree.SubElement(query, "formula")
-        formula.text = f"E[<=1000;500](max: attack_cost) under cheap"
+        formula.text = f"E[<=1000;500](max: cost) under cheap"
         comment = etree.SubElement(query, "comment")
         comment.text = "Expected cost under cheap"
         # Success probability under cheap
@@ -307,6 +340,33 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         formula.text = f"Pr[<=1000](<>{goal_name}) under cheap"
         comment = etree.SubElement(query, "comment")
         comment.text = "Success probability under cheap"
+
+        query = etree.SubElement(queries, "query")
+
+        # Limited cost strategy
+        query = etree.SubElement(queries, "query")
+        formula = etree.SubElement(query, "formula")
+        formula.text = f"strategy limited_cost = minE(time)[cost<=20]: <>{goal_name}"
+        comment = etree.SubElement(query, "comment")
+        comment.text = "Limited cost fastest strategy"
+        # Expected time under cheap
+        query = etree.SubElement(queries, "query")
+        formula = etree.SubElement(query, "formula")
+        formula.text = f"E[cost<=20;500](max: time) under limited_cost"
+        comment = etree.SubElement(query, "comment")
+        comment.text = "Expected time under limited cost"
+        # Expected cost under cheap
+        query = etree.SubElement(queries, "query")
+        formula = etree.SubElement(query, "formula")
+        formula.text = f"E[cost<=20;500](max: cost) under limited_cost"
+        comment = etree.SubElement(query, "comment")
+        comment.text = "Expected cost under limited cost"
+        # Success probability under cheap
+        query = etree.SubElement(queries, "query")
+        formula = etree.SubElement(query, "formula")
+        formula.text = f"Pr[cost<=20](<>{goal_name}) under limited_cost"
+        comment = etree.SubElement(query, "comment")
+        comment.text = "Success probability under limited_cost"
 
 
 if __name__ == "__main__":

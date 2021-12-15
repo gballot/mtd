@@ -7,7 +7,7 @@ class StateType(Enum):
     MTD = 2
     COMPLETION = 3
     NO_ACTIVATION = 4
-    PROPORTIONAL_COST = 5
+    ACTIVATION_COST = 5
 
 
 class EdgeType(Enum):
@@ -18,7 +18,7 @@ class EdgeType(Enum):
     DEFENSE = 5
     LOOP_DEFENSE = 6
     NO_ACTIVATION = 7
-    TO_PROPORTIONAL_COST = 8
+    TO_ACTIVATION_COST = 8
 
 
 class Graph:
@@ -168,10 +168,10 @@ class AttackerState(State):
     def build_edges(self, graph):
         for attack in graph.tree.attacks:
             if attack not in self.activated and attack not in self.completed_subtree:
-                if attack.proportional_cost is None:
+                if attack.activation_cost is None:
                     self.build_activation_edges(attack, graph)
                 else:
-                    self.build_proportial_cost_edge(attack, graph)
+                    self.build_activation_cost_edge(attack, graph)
 
         # No activation edge
         if len(self.activated) > 0 or any(
@@ -203,9 +203,17 @@ class AttackerState(State):
         )
         destination.build(graph=graph)
 
-    def build_proportial_cost_edge(self, attack, graph):
-        #TODO
-        pass
+    def build_activation_cost_edge(self, attack, graph):
+        destination = ActivationCostState(
+            activated=self.get_activated(),
+            completed=self.get_completed(),
+            attack=attack,
+            tree=self.tree,
+        )
+        self.edges.append(
+            ActivationCostEdge(source=self, destination=destination, attack=attack)
+        )
+        destination.build(graph=graph)
 
 
 class CompletionState(State):
@@ -401,6 +409,37 @@ class NoActivationState(State):
             )
 
 
+class ActivationCostState(State):
+    def __init__(self, activated, completed, attack, tree):
+        super().__init__(
+            activated=activated,
+            completed=completed,
+            state_type=StateType.ACTIVATION_COST,
+            tree=tree,
+        )
+        self.attack = attack
+        self.key = self.serialize()
+
+    def __str__(self):
+        return f"Activation cost state {self.serialize()}\n" + super().__str__()
+
+    def build(self, graph):
+        if self.key not in graph.states:
+            graph.states[self.key] = self
+            self.build_activation_edge(self.attack, graph)
+
+    def build_activation_edge(self, attack, graph):
+        destination = AttackerState(
+            activated=self.get_activated() + [attack],
+            completed=self.get_completed(),
+            tree=self.tree,
+        )
+        self.edges.append(
+            ActivationEdge(source=self, destination=destination, attack=attack)
+        )
+        destination.build(graph=graph)
+
+
 class Edge:
     def __init__(self, source, destination):
         assert source is not None and destination is not None
@@ -464,6 +503,13 @@ class NoActivationEdge(Edge):
     def __init__(self, source, destination):
         super().__init__(source=source, destination=destination)
         self.type = EdgeType.NO_ACTIVATION
+
+
+class ActivationCostEdge(Edge):
+    def __init__(self, source, destination, attack):
+        super().__init__(source=source, destination=destination)
+        self.attack = attack
+        self.type = EdgeType.TO_ACTIVATION_COST
 
 
 if __name__ == "__main__":

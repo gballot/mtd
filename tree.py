@@ -145,12 +145,11 @@ class Attack(Node):
         self.completion_time = completion_time
         self.success_probability = success_probability
         self.activation_cost = activation_cost
+        self.proportional_cost = proportional_cost
 
 
 class Defense(Node):
-    def __init__(
-        self, period, success_probability, cost, name, parent=None
-    ):
+    def __init__(self, period, success_probability, cost, name, parent=None):
         super().__init__(
             parent=parent,
             node_type=NodeType.DEFENSE,
