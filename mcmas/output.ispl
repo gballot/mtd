@@ -1,0 +1,33 @@
+Agent Environment
+	Vars:
+		time : 0 .. 10;
+		finished_g1 : boolean;
+		finished_g0 : boolean;
+		finished_g2 : boolean;
+		finished_g3 : boolean;
+		finished_g4 : boolean;
+		finished_g7 : boolean;
+	end Vars
+	Actions = {none};
+	Protocol:
+		Other: {none};
+	end Protocol
+	Evolution:
+		time=1 if (time=0);
+		time=2 if (time=1);
+		time=3 if (time=2);
+		time=4 if (time=3);
+		time=5 if (time=4);
+		time=6 if (time=5);
+		time=7 if (time=6);
+		time=8 if (time=7);
+		time=9 if (time=8);
+		time=10 if (time=9);
+		finished_g1 = ( finished_g1 or ( (Attack_a2.Action=finished) or ( finished_g0 or ( (Attack_a0.Action=finished) and (Attack_a1.Action=finished) ) );
+		finished_g0 = ( finished_g0 or ( (Attack_a0.Action=finished) and (Attack_a1.Action=finished) );
+		finished_g2 = ( finished_g2 or ( (Attack_a3.Action=finished) or ( ( finished_g3 or ( ( finished_g4 or ( (Attack_a4.Action=finished) or ( finished_g7 or (Attack_a7.Action=finished) ) ) and !(Defense_d2.Action=move) ) ) and !(Defense_d1.Action=move) ) );
+		finished_g3 = ( ( finished_g3 or ( ( finished_g4 or ( (Attack_a4.Action=finished) or ( finished_g7 or (Attack_a7.Action=finished) ) ) and !(Defense_d2.Action=move) ) ) and !(Defense_d1.Action=move) );
+		finished_g4 = ( ( finished_g4 or ( (Attack_a4.Action=finished) or ( finished_g7 or (Attack_a7.Action=finished) ) ) and !(Defense_d2.Action=move) );
+		finished_g7 = ( finished_g7 or (Attack_a7.Action=finished) );
+	end Evolution
+end Agent

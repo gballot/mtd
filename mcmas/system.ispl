@@ -1,0 +1,114 @@
+Semantics=SingleAssignment;
+
+Agent Environment
+  Vars:
+    time : 0 .. 10;
+    g0Time : 0 .. 1;
+  end Vars
+  Actions = {none};
+  Protocol:
+    Other: {none};
+  end Protocol
+  Evolution:
+    time=1 if (time = 0);
+    time=2 if (time = 1);
+    time=3 if (time = 2);
+    time=4 if (time = 3);
+    time=5 if (time = 4);
+    time=6 if (time = 5);
+    time=7 if (time = 6);
+    time=8 if (time = 7);
+    time=9 if (time = 8);
+    time=10 if (time = 9);
+    g0Time=1 if ( (Attack0.Action=finish) and (Attack1.Action=finish) );
+  end Evolution
+end Agent
+
+
+Agent Defense0
+  Vars:
+    period : 2 .. 6;
+    time : 0 .. 6;
+  end Vars
+  Actions = {move, none, setPeriod2, setPeriod3, setPeriod4, setPeriod5, setPeriod6};
+  Protocol:
+    time>=period: {move};
+    time<period: {none, setPeriod2, setPeriod3, setPeriod4, setPeriod5, setPeriod6};
+  end Protocol
+  Evolution:
+    time=1 if (time=0) or (time>=period);
+    time=2 if (time=1) and (period>time);
+    time=3 if (time=2) and (period>time);
+    time=4 if (time=3) and (period>time);
+    time=5 if (time=4) and (period>time);
+    time=6 if (time=5) and (period>time);
+    period=2 if (Action=setPeriod2);
+    period=3 if (Action=setPeriod3);
+    period=4 if (Action=setPeriod4);
+    period=5 if (Action=setPeriod5);
+    period=6 if (Action=setPeriod6);
+  end Evolution
+end Agent
+
+
+Agent Attack0
+  Vars:
+    time : 0 .. 3;
+  end Vars
+  Actions = {attack, finish, none};
+  Protocol:
+    time=3: {finish};
+    Other: {attack, none};
+  end Protocol
+  Evolution:
+    time=0 if ( (time=0) and (Action=none) ) or (Defense0.Action=move);
+    time=1 if ( ( (time=1) and (Action=none) ) or ( (time=0) and (Action=attack) ) ) and (Defense0.Action=none or Defense0.Action=setPeriod2 or Defense0.Action=setPeriod3 or Defense0.Action=setPeriod4 or Defense0.Action=setPeriod5 or Defense0.Action=setPeriod6);
+    time=2 if ( ( (time=2) and (Action=none) ) or ( (time=1) and (Action=attack) ) ) and (Defense0.Action=none or Defense0.Action=setPeriod2 or Defense0.Action=setPeriod3 or Defense0.Action=setPeriod4 or Defense0.Action=setPeriod5 or Defense0.Action=setPeriod6);
+    time=3 if ( (time=2) and (Action=attack) ) and (Defense0.Action=none or Defense0.Action=setPeriod2 or Defense0.Action=setPeriod3 or Defense0.Action=setPeriod4 or Defense0.Action=setPeriod5 or Defense0.Action=setPeriod6);
+  end Evolution
+end Agent
+
+
+Agent Attack1
+  Vars:
+    time : 0 .. 4;
+  end Vars
+  Actions = {attack, finish, none};
+  Protocol:
+    time=4: {finish};
+    Other: {attack, none};
+  end Protocol
+  Evolution:
+    time=0 if ( (time=0) and (Action=none) ) or (Defense0.Action=move);
+    time=1 if ( ( (time=1) and (Action=none) ) or ( (time=0) and (Action=attack) ) ) and (Defense0.Action=none or Defense0.Action=setPeriod2 or Defense0.Action=setPeriod3 or Defense0.Action=setPeriod4 or Defense0.Action=setPeriod5 or Defense0.Action=setPeriod6);
+    time=2 if ( ( (time=2) and (Action=none) ) or ( (time=1) and (Action=attack) ) ) and (Defense0.Action=none or Defense0.Action=setPeriod2 or Defense0.Action=setPeriod3 or Defense0.Action=setPeriod4 or Defense0.Action=setPeriod5 or Defense0.Action=setPeriod6);
+    time=3 if ( ( (time=3) and (Action=none) ) or ( (time=2) and (Action=attack) ) ) and (Defense0.Action=none or Defense0.Action=setPeriod2 or Defense0.Action=setPeriod3 or Defense0.Action=setPeriod4 or Defense0.Action=setPeriod5 or Defense0.Action=setPeriod6);
+    time=4 if ( (time=3) and (Action=attack) ) and (Defense0.Action=none or Defense0.Action=setPeriod2 or Defense0.Action=setPeriod3 or Defense0.Action=setPeriod4 or Defense0.Action=setPeriod5 or Defense0.Action=setPeriod6);
+  end Evolution
+end Agent
+
+Evaluation
+  timeout if (Environment.time=10);
+  goal if (Environment.g0Time=1);
+  d0ok if (Defense0.period>3);
+end Evaluation
+
+InitStates
+  (Attack0.time=0) and 
+  (Attack1.time=0) and 
+  (Defense0.time=0) and 
+  (Environment.time=0) and
+  (Environment.g0Time=0);
+end InitStates
+
+Groups
+  Attacker = {Attack0, Attack1};
+  Defender = {Defense0};
+end Groups
+
+Fairness
+end Fairness
+
+Formulae
+  <Attacker>F( (<Defender>G(d0ok)) -> (!timeout and goal) );
+end Formulae
