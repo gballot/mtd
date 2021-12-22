@@ -210,9 +210,9 @@ class Tree:
                 if (
                     parent is not None
                     and parent not in completed
-                    and not parent.reset
                     and (
                         parent.operation_type == OperationType.OR
+                        or parent.operation_type == OperationType.EDGE
                         or (
                             parent.operation_type == OperationType.AND
                             and {n.name for n in parent.attack_childern}
@@ -224,23 +224,28 @@ class Tree:
                 ):
                     fixed_point = False
                     completed.append(parent)
-                    completed.remove(node)
         # Remove completed nodes that have a backup above
         for node in completed.copy():
             backup = node
-            while backup.parent:
-                backup = backup.parent
-                if backup in completed and not backup.reset:
-                    completed.remove(node)
-                    break
+            current = node
+            while current.parent:
+                current = current.parent
+                if current in completed and not current.reset:
+                    backup = current
+
+            current = node
+            while current is not backup:
+                if current in completed:
+                    completed.remove(current)
+                current = current.parent
         # Remove activated nodes that have a backup above
         for node in activated.copy():
             if node in completed:
                 activated.remove(node)
                 break
-            backup = node
-            while backup.parent:
-                backup = backup.parent
-                if backup in completed and not backup.reset:
+            current = node
+            while current.parent:
+                current = current.parent
+                if current in completed and not current.reset:
                     activated.remove(node)
                     break
