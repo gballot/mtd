@@ -1,6 +1,7 @@
 from graph import Graph
 from tree import Tree, Goal, Attack, Defense, OperationType
 from uppaal import UppaalExporter
+from optimizer import Optimizer
 
 a0 = Attack(
     completion_time=100,
@@ -21,6 +22,7 @@ d0 = Defense(period=50, success_probability=0.6, name="d0", cost=1)
 d1 = Defense(period=40, success_probability=0.8, name="d1", cost=1)
 d2 = Defense(period=40, success_probability=0.3, name="d2", cost=1)
 d3 = Defense(period=20, success_probability=0.7, name="d3", cost=1)
+d4 = Defense(period=20, success_probability=0.7, name="d4", cost=1)
 
 g0 = Goal(
     children=[d0, a0, a1], operation_type=OperationType.AND, reset=False, name="g0"
@@ -32,12 +34,16 @@ g5 = Goal(children=[g6, g7], operation_type=OperationType.AND, name="g5")
 g4 = Goal(children=[d2, a4, g5], operation_type=OperationType.OR, reset=True, name="g4")
 g3 = Goal(children=[d1, g4], operation_type=OperationType.EDGE, reset=True, name="g3")
 g2 = Goal(children=[a3, g3], operation_type=OperationType.OR, name="g2")
-gt = Goal(children=[g1, g2], operation_type=OperationType.OR, name="gt")
+gt = Goal(
+    children=[g1, g2, d4], operation_type=OperationType.OR, reset=False, name="gt"
+)
 
 # gtest = Goal(children=[a1, a0], operation_type=OperationType.OR, name="gt")
 
 tree = Tree(gt)
-graph = Graph(tree)
-print(graph)
-uppaal = UppaalExporter(graph, "output.xml")
-uppaal.make_xml()
+optimizer = Optimizer(tree)
+optimizer.export("output.xml", cost_limit=400)
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml")
+print(
+    f"E(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]"
+)
