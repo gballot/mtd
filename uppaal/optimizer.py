@@ -27,8 +27,10 @@ class Optimizer:
         output = output.replace("\x1b[K", "")
         output = output.replace("\n\n\n", "\n\n")
         formulas = output.split("\n\n")
+        # Formula 9: strategy limited_cost = minE(time)[cost<=400]: <>AttackDefenseGraph.goal
         strategy_found = "Formula is satisfied." in formulas[9]
         if strategy_found:
+            # Formula 10: E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost
             E_time = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
@@ -41,6 +43,7 @@ class Optimizer:
             time_distribution_low = float(time_distribution_matches[0][0])
             time_distribution_up = float(time_distribution_matches[1][0])
             time_distribution_hist = [int(m[0]) for m in time_distribution_matches[4:]]
+            # Formula 11: E[cost<={cost_limit};{simulation_number}](max: cost) under limited_cost
             E_cost = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
@@ -53,6 +56,7 @@ class Optimizer:
             cost_distribution_low = float(cost_distribution_matches[0][0])
             cost_distribution_up = float(cost_distribution_matches[1][0])
             cost_distribution_hist = [int(m[0]) for m in cost_distribution_matches[4:]]
+            # Formula 11: Pr[cost<={cost_limit}](<>AttackDefenseGraph.goal) under limited_cost
             P_success_inf = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
