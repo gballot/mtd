@@ -440,6 +440,9 @@ class ActivationCostState(State):
         )
         destination.build(graph=graph)
 
+    def serialize(self):
+        return super().serialize() + (self.attack.name,)
+
 
 class Edge:
     def __init__(self, source, destination):
