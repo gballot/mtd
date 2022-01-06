@@ -5,6 +5,9 @@ from graph import Graph
 from tree import Tree, Goal, Attack, Defense, OperationType
 from uppaal import UppaalExporter
 
+def score(E_time, E_cost, P_success_inf, P_success_sup):
+    return E_time/100 - E_cost/400 + (P_success_inf + P_success_sup)/2
+
 
 class Optimizer:
     verifyta_prefix = "/home/gabriel/uppaal64-4.1.20-stratego-7/bin-Linux/"
@@ -12,6 +15,13 @@ class Optimizer:
     def __init__(self, tree):
         self.tree = tree
         self.graph = Graph(self.tree)
+
+    def set_defense_times(self, times):
+        """times is a dictionary with names of the defenses as key."""
+        for defense in self.tree.defenses:
+            defense.period = times[defense.name]
+        self.graph = Graph(self.tree) # We could avoid rebuilding it
+
 
     def export(
         self, file_name, simulation_number=10000, time_limit=1000, cost_limit=400
@@ -76,3 +86,9 @@ class Optimizer:
                 )[0][0]
             )
         return E_time, E_cost, P_success_inf, P_success_sup
+
+    def evaluate(self, times, file_name, simulation_number=10000, time_limit=1000, cost_limit=400):
+        self.set_defense_times(times)
+        self.export(file_name, cost_limit=cost_limit)
+        return score(*self.verify(file_name))
+

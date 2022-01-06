@@ -42,7 +42,7 @@ gt = Goal(
 
 tree = Tree(gt)
 optimizer = Optimizer(tree)
-optimizer.export("output.xml", cost_limit=400)
+optimizer.export("output.xml", simulation_number=10000, cost_limit=400)
 E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml")
 print(
     f"E(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]"

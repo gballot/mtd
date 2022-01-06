@@ -124,7 +124,8 @@ class State(metaclass=Unique):
         return (
             tuple(sorted({elem.name for elem in self.activated})),
             tuple(sorted({elem.name for elem in self.completed})),
-            tuple(sorted(self.tree.defense_periods)),
+            # we remove the defense periods while it is unique in the graph
+            # tuple(sorted(self.tree.defense_periods)),
             self.state_type.name,
         )
 
