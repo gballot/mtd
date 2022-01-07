@@ -1,7 +1,11 @@
+import sys
+
 from graph import Graph
 from tree import Tree, Goal, Attack, Defense, OperationType
 from uppaal import UppaalExporter
 from optimizer import Optimizer
+
+sys.setrecursionlimit(10**6)
 
 a0 = Attack(
     completion_time=100,
