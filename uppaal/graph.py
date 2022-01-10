@@ -21,6 +21,18 @@ class EdgeType(Enum):
     TO_ACTIVATION_COST = 8
 
 
+def defense_activation_activated_completed(
+    defense, destination_activated, destination_completed
+):
+    """Remove inplace the atomic attacks that are deactivated and the goals that are
+    reseted with a successful defense activation."""
+    for reseted_attack in defense.parent.attack_childern:
+        if reseted_attack in destination_activated:
+            destination_activated.remove(reseted_attack)
+    if defense.parent.reset and defense.parent in destination_completed:
+        destination_completed.remove(defense.parent)
+
+
 class Graph:
     def __init__(self, tree):
         self.tree = tree
@@ -66,6 +78,7 @@ class Unique(type):
 
 class State(metaclass=Unique):
     """Super class for states."""
+
     def __init__(
         self,
         activated,
@@ -147,6 +160,7 @@ class State(metaclass=Unique):
 
 class AttackerState(State):
     """States (A,B) of atomic attacks activated and completed nodes."""
+
     def __init__(self, activated, completed, tree, initial=False, accepting=False):
         super().__init__(
             activated=activated,
@@ -230,6 +244,7 @@ class AttackerState(State):
 class CompletionState(State):
     """State when an atomic attack is stochasticly completed. It leads to a branchpoint
     in Uppaal."""
+
     def __init__(self, activated, completed, new_completed, tree, initial=False):
         super().__init__(
             activated=activated,
@@ -300,6 +315,7 @@ class CompletionState(State):
 class DefenseState(State):
     """State when a MTD defense is stochasticly activated. It leads to a branchpoint
     in Uppaal."""
+
     def __init__(self, activated, completed, defense, tree, initial=False):
         super().__init__(
             activated=activated,
@@ -323,14 +339,9 @@ class DefenseState(State):
         # Success edge
         destination_success_activated = self.get_activated()
         destination_success_completed = self.get_completed()
-        for reseted_attack in self.defense.parent.attack_childern:
-            if reseted_attack in destination_success_activated:
-                destination_success_activated.remove(reseted_attack)
-        if (
-            self.defense.parent.reset
-            and self.defense.parent in destination_success_completed
-        ):
-            destination_success_completed.remove(self.defense.parent)
+        defense_activation_activated_completed(
+            self.defense, destination_success_activated, destination_success_completed
+        )
 
         destination_success = AttackerState(
             activated=destination_success_activated,
@@ -370,6 +381,7 @@ class DefenseState(State):
 
 class NoActivationState(State):
     """State when the defenser decides to wait and not activated more atomic attacks."""
+
     def __init__(self, activated, completed, tree, initial=False):
         super().__init__(
             activated=activated,
@@ -397,12 +409,19 @@ class NoActivationState(State):
 
     def build_completion_edge(self, attack, graph):
         """A completion edge for each atomic attacks in self.activated."""
-        destination = CompletionState(
-            activated=self.get_activated(),
-            completed=self.get_completed(),
-            new_completed=attack,
-            tree=self.tree,
-        )
+        if attack.success_probability < 1:
+            destination = CompletionState(
+                activated=self.get_activated(),
+                completed=self.get_completed(),
+                new_completed=attack,
+                tree=self.tree,
+            )
+        else:
+            destination = AttackerState(
+                activated=self.get_activated(),
+                completed=self.get_completed() + [attack],
+                tree=self.tree,
+            )
         self.edges.append(
             ToCompletionEdge(source=self, destination=destination, attack=attack)
         )
@@ -414,12 +433,25 @@ class NoActivationState(State):
         has an impact on the activated atomic attacks or the completed
         nodes."""
         if defense in self.active_defenses:
-            destination = DefenseState(
-                activated=self.get_activated(),
-                completed=self.get_completed(),
-                defense=defense,
-                tree=self.tree,
-            )
+            if defense.success_probability < 1:
+                destination = DefenseState(
+                    activated=self.get_activated(),
+                    completed=self.get_completed(),
+                    defense=defense,
+                    tree=self.tree,
+                )
+            else:
+                destination_activated = self.get_activated()
+                destination_completed = self.get_completed()
+                defense_activation_activated_completed(
+                    defense, destination_activated, destination_completed
+                )
+
+                destination = AttackerState(
+                    activated=destination_activated,
+                    completed=destination_completed,
+                    tree=self.tree,
+                )
             self.edges.append(
                 ToDefenseEdge(source=self, destination=destination, defense=defense)
             )
@@ -433,6 +465,7 @@ class NoActivationState(State):
 class ActivationCostState(State):
     """State where we stay one unit of time to increase the cost hybrid clock
     of a given cost activation value."""
+
     def __init__(self, activated, completed, attack, tree):
         super().__init__(
             activated=activated,
@@ -468,6 +501,7 @@ class ActivationCostState(State):
 
 class Edge:
     """Edge super class."""
+
     def __init__(self, source, destination):
         assert source is not None and destination is not None
         self.source = source

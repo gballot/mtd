@@ -30,7 +30,7 @@ class Optimizer:
         uppaal.make_xml(simulation_number, time_limit, cost_limit)
 
     def verify(self, file_name):
-        command = f"{self.verifyta_prefix}verifyta {file_name}"
+        command = f"{self.verifyta_prefix}verifyta -s {file_name}"
         process = subprocess.run(command.split(), capture_output=True, encoding="utf-8")
         output = process.stdout
         output = output.replace("\x1b[2K", "")
@@ -44,11 +44,11 @@ class Optimizer:
             E_time = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[10].split("\n")[3],
+                    formulas[10].split("\n")[2],
                 )[1][0]
             )
             time_distribution_matches = re.findall(
-                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[10].split("\n")[4]
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[10].split("\n")[3]
             )
             time_distribution_low = float(time_distribution_matches[0][0])
             time_distribution_up = float(time_distribution_matches[1][0])
@@ -57,11 +57,11 @@ class Optimizer:
             E_cost = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[11].split("\n")[3],
+                    formulas[11].split("\n")[2],
                 )[1][0]
             )
             cost_distribution_matches = re.findall(
-                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[11].split("\n")[4]
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[11].split("\n")[3]
             )
             cost_distribution_low = float(cost_distribution_matches[0][0])
             cost_distribution_up = float(cost_distribution_matches[1][0])
@@ -70,19 +70,19 @@ class Optimizer:
             P_success_inf = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[12].split("\n")[3],
+                    formulas[12].split("\n")[2],
                 )[1][0]
             )
             P_success_sup = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[12].split("\n")[3],
+                    formulas[12].split("\n")[2],
                 )[2][0]
             )
             P_success_confidence = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[12].split("\n")[4],
+                    formulas[12].split("\n")[3],
                 )[0][0]
             )
         return E_time, E_cost, P_success_inf, P_success_sup

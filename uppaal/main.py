@@ -5,11 +5,11 @@ from tree import Tree, Goal, Attack, Defense, OperationType
 from uppaal import UppaalExporter
 from optimizer import Optimizer
 
-sys.setrecursionlimit(10**6)
+sys.setrecursionlimit(10 ** 6)
 
 a0 = Attack(
     completion_time=100,
-    success_probability=0.66,
+    success_probability=1,
     activation_cost=10,
     proportional_cost=1,
     name="a0",
@@ -42,9 +42,9 @@ gt = Goal(
     children=[g1, g2, d4], operation_type=OperationType.OR, reset=False, name="gt"
 )
 
-# gtest = Goal(children=[a1, a0], operation_type=OperationType.OR, name="gt")
+gtest = Goal(children=[a1, a0], operation_type=OperationType.OR, name="gt")
 
-tree = Tree(gt)
+tree = Tree(gtest)
 optimizer = Optimizer(tree)
 optimizer.export("output.xml", simulation_number=10000, cost_limit=400)
 E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml")
