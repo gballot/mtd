@@ -179,6 +179,7 @@ class Tree:
         return self.root.get_children(include_defense)
 
     def dfs(self, include_defense=False):
+        """Deep First Search."""
         nodes = []
         if self.root.node_type == NodeType.DEFENSE and not include_defense:
             return nodes
@@ -186,6 +187,8 @@ class Tree:
         return nodes
 
     def init_dfs(self):
+        """Sould be used only at initialization to set self.attacks, self.defenses
+        self.goals."""
         self.attacks = []
         self.defenses = []
         self.goals = []
@@ -201,6 +204,16 @@ class Tree:
         self.nodes = self.attacks + self.goals
 
     def reduce_activated_completed(self, activated, completed):
+        """Uses the tree structure to determine the equivalence class of a
+        set (A,B) of activated atomic attacks and completed nodes of the tree.
+        The sets (A,B) and (A',B') are equivalent if they have the same upper
+        non-reset nodes completed is the tree, and same reset nodes over the
+        upper non rest-ones. Intuitiveley, (A,B) is equivalent to (A',B') if
+        they have reached the same backup nodes and have the same atomic attacks
+        activated that are not under a backup.
+
+        This functions returns inplace the minimal representant (only backup
+        nodes and other atomic attacks activated)."""
         # Add parents node that are completed
         fixed_point = False
         while not fixed_point:

@@ -37,6 +37,7 @@ class UppaalExporter:
         self.output_file.close
 
     def make_xml(self, simulation_number=10000, time_limit=1000, cost_limit=400):
+        """XML file interpretable by Uppaal Stratego."""
         self.open_file()
         self.output_file.write('<?xml version="1.0" encoding="utf-8"?>\n')
         self.output_file.write(
@@ -55,6 +56,7 @@ class UppaalExporter:
         )
 
     def make_declaration(self):
+        """Declaration section of Uppaal."""
         tree = self.graph.tree
         attack_names = [attack.name for attack in tree.attacks]
         defense_names = [defense.name for defense in tree.defenses]
@@ -91,6 +93,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
 """
 
     def make_templates(self):
+        """The unic template of our uppaal model."""
         template = etree.SubElement(self.nta, "template")
         template_name = etree.SubElement(template, "name")
         template_name.set("x", "0")
@@ -110,9 +113,8 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
                     initial_state_id = state_id
         for state in states.values():
             if (
-                state.state_type != StateType.NORMAL
-                and state.state_type != StateType.NO_ACTIVATION
-                and state.state_type != StateType.ACTIVATION_COST
+                state.state_type == StateType.MTD
+                or state.state_type == StateType.COMPLETION
             ):
                 self.make_branchpoint(state, template)
         initial = etree.SubElement(template, "init")
@@ -123,6 +125,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         initial.set("ref", initial_state_id)
 
     def make_location(self, state, template):
+        """Locations of the template."""
         self.serial_to_id[state.serialize()] = f"id{self.state_id}"
         self.id_to_serial[f"id{self.state_id}"] = state.serialize()
         location_x, location_y = self.dx * (self.state_id // self.lx), self.dy * (
@@ -164,6 +167,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         self.state_id += 1
 
     def make_label(self, state, location, x, y):
+        """Labels of locations (invariant only are needed)."""
         # Stop time of goal
         if state.accepting:
             label = etree.SubElement(
@@ -288,6 +292,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
             label.text = "xcost = 0"
 
     def make_queries(self, simulation_number=10000, time_limit=1000, cost_limit=400):
+        """Uppaal and Stratego queries on the model."""
         goal_name = self.serial_to_location_name[self.graph.accepting_state.serialize()]
         goal_name = "AttackDefenseGraph." + goal_name
         queries = etree.SubElement(self.nta, "queries")
