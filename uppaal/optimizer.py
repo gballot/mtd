@@ -1,3 +1,5 @@
+from scipy.optimize import LinearConstraint, Bounds, minimize
+import numpy as np
 import subprocess
 import re
 
@@ -20,16 +22,34 @@ class Optimizer:
     def set_defense_times(self, times):
         """times is a dictionary with names of the defenses as key."""
         for defense in self.tree.defenses:
-            defense.period = times[defense.name]
-        self.graph = Graph(self.tree)  # We could avoid rebuilding it
+            if defense.name in times:
+                defense.period = times[defense.name]
+        self.exporter.set_defense_times(times)
+
+    def minimize(self, defense_cost_limit, defense_cost_proportions, time_limit=None, cost_limit=None):
+        defenses = self.tree.defenses
+        n_d = len(defenses)
+        coeficients_defenses = np.array([[c[1] for c in sorted(list(defense_cost_proportions.items()))]])
+        constraint_matrix = np.concatenate([np.eye(n_d), coeficients_defenses], dtype=float)
+        left_bound = np.ones(n_d + 1)
+        left_bound[-1] = defense_cost_limit
+        right_bound = np.full(n_d + 1, np.inf)
+        right_bound[-1] = np.inf
+        linear_constraint = LinearConstraint(constraint_matrix, left_bound, right_bound)
+        result = minimize(lambda td:self.evaluate(td, time_limit=time_limit, cost_limit=cost_limit), np.ones(n_d), method='trust-constr')
+        print(result.x)
+        return result
+
 
     def export(
         self, file_name, simulation_number=10000, time_limit=1000, cost_limit=400
     ):
-        uppaal = UppaalExporter(self.graph, file_name)
-        uppaal.make_xml(simulation_number, time_limit, cost_limit)
+        self.file_name = file_name
+        self.exporter = UppaalExporter(self.graph, file_name)
+        self.exporter.make_xml(simulation_number, time_limit, cost_limit)
 
-    def verify(self, file_name):
+    def verify(self, file_name, simulation_number=10000, time_limit=None, cost_limit=None):
+        self.exporter.set_queries(simulation_number, time_limit, cost_limit)
         command = f"{self.verifyta_prefix}verifyta -s {file_name}"
         process = subprocess.run(command.split(), capture_output=True, encoding="utf-8")
         output = process.stdout
@@ -38,17 +58,17 @@ class Optimizer:
         output = output.replace("\n\n\n", "\n\n")
         formulas = output.split("\n\n")
         # Formula 9: strategy limited_cost = minE(time)[cost<=400]: <>AttackDefenseGraph.goal
-        strategy_found = "Formula is satisfied." in formulas[9]
+        strategy_found = "Formula is satisfied." in formulas[1]
         if strategy_found:
             # Formula 10: E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost
             E_time = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[10].split("\n")[2],
+                    formulas[2].split("\n")[2],
                 )[1][0]
             )
             time_distribution_matches = re.findall(
-                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[10].split("\n")[3]
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[2].split("\n")[3]
             )
             time_distribution_low = float(time_distribution_matches[0][0])
             time_distribution_up = float(time_distribution_matches[1][0])
@@ -57,11 +77,11 @@ class Optimizer:
             E_cost = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[11].split("\n")[2],
+                    formulas[3].split("\n")[2],
                 )[1][0]
             )
             cost_distribution_matches = re.findall(
-                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[11].split("\n")[3]
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[3].split("\n")[3]
             )
             cost_distribution_low = float(cost_distribution_matches[0][0])
             cost_distribution_up = float(cost_distribution_matches[1][0])
@@ -70,26 +90,34 @@ class Optimizer:
             P_success_inf = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[12].split("\n")[2],
+                    formulas[4].split("\n")[2],
                 )[1][0]
             )
             P_success_sup = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[12].split("\n")[2],
+                    formulas[4].split("\n")[2],
                 )[2][0]
             )
             P_success_confidence = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[12].split("\n")[3],
+                    formulas[4].split("\n")[3],
                 )[0][0]
             )
-        return E_time, E_cost, P_success_inf, P_success_sup
+            return E_time, E_cost, P_success_inf, P_success_sup
+        return None, None, None, None
 
     def evaluate(
-        self, times, file_name, simulation_number=10000, time_limit=1000, cost_limit=400
+        self, times, simulation_number=10000, time_limit=None, cost_limit=None
     ):
+        if type(times) is not dict:
+            keys = sorted([d.name for d in self.tree.defenses])
+            times_dict = dict()
+            for i in range(len(keys)):
+                times_dict[keys[i]] = times[i]
+            times = times_dict
+
         self.set_defense_times(times)
-        self.export(file_name, cost_limit=cost_limit)
-        return score(*self.verify(file_name))
+        self.verify(self.file_name, cost_limit=cost_limit)
+        return score(*self.verify(self.file_name))

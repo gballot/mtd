@@ -30,8 +30,8 @@ class UppaalExporter:
         self.graph = graph
         self.output_file_name = output_file_name
 
-    def open_file(self):
-        self.output_file = open(self.output_file_name, "w")
+    def open_file(self, mode="w"):
+        self.output_file = open(self.output_file_name, mode)
 
     def close_file(self):
         self.output_file.close
@@ -43,7 +43,6 @@ class UppaalExporter:
         self.output_file.write(
             "<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>\n"
         )
-        self.close_file()
         self.nta = etree.Element("nta")
         self.make_declaration()
         self.make_templates()
@@ -54,8 +53,36 @@ class UppaalExporter:
         self.output_file.write(
             etree.tostring(self.nta, encoding="unicode", short_empty_elements=False)
         )
+        self.close_file()
 
-    def make_declaration(self):
+    def set_queries(self, simulation_number=10000, time_limit=None, cost_limit=None):
+        self.open_file(mode="r")
+        system = etree.parse(self.output_file)
+        self.close_file()
+        self.nta = system.getroot()
+        self.nta.remove(system.find("queries"))
+        self.open_file(mode="w")
+        self.make_queries(simulation_number, time_limit, cost_limit)
+        etree.indent(self.nta, space="\t", level=0)
+        self.output_file.write(
+            etree.tostring(self.nta, encoding="unicode", short_empty_elements=False)
+        )
+        self.close_file()
+
+    def set_defense_times(self, times):
+        self.open_file(mode="r")
+        system = etree.parse(self.output_file)
+        self.close_file()
+        self.nta = system.getroot()
+        self.open_file(mode="w")
+        self.make_declaration(remake=True)
+        etree.indent(self.nta, space="\t", level=0)
+        self.output_file.write(
+            etree.tostring(self.nta, encoding="unicode", short_empty_elements=False)
+        )
+        self.close_file()
+
+    def make_declaration(self, remake=False):
         """Declaration section of Uppaal."""
         tree = self.graph.tree
         attack_names = [attack.name for attack in tree.attacks]
@@ -67,8 +94,11 @@ class UppaalExporter:
         t_d = [defense.period for defense in tree.defenses]
         p_d = [defense.success_probability for defense in tree.defenses]
 
-        self.declaration = etree.SubElement(self.nta, "declaration")
-        self.declaration.text = f"""const int n_a = {len(tree.attacks)};
+        if remake:
+            declaration = self.nta.find("declaration")
+        else:
+            declaration = etree.SubElement(self.nta, "declaration")
+        declaration.text = f"""const int n_a = {len(tree.attacks)};
 const int n_d = {len(tree.defenses)};
 hybrid clock time;
 hybrid clock cost;
@@ -81,12 +111,12 @@ const int {list_to_string(attack_names, prefix='t_', values=t_a)};
 const int {list_to_string(attack_names, prefix='c_', values=c_a)};
 """
         if any(cp_a):
-            self.declaration.text += (
+            declaration.text += (
                 f"const int {list_to_string(attack_names, prefix='cp_', values=cp_a)};"
             )
 
         if len(defense_names) > 0:
-            self.declaration.text += f"""
+            declaration.text += f"""
 hybrid clock {list_to_string(defense_names, prefix='x_')};
 const int {list_to_string(defense_names, prefix='t_', values=t_d)};
 //const int {list_to_string(defense_names, prefix='p_', values=p_d)};
@@ -204,7 +234,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
                 invariant += f" &&\nx_{activated.name} <= t_{activated.name}"
         elif state.state_type == StateType.ACTIVATION_COST:
             invariant = (
-                f"time' == 0 &&\nxcost <= 1 &&\ncost' == {state.attack.activation_cost}"
+                f"time' == 0 &&\nxcost <= 1 &&\ncost' == c_{state.attack.name}"
             )
             for attack in self.graph.tree.attacks:
                 invariant += f" &&\nx_{attack.name}' == 0"
@@ -291,107 +321,107 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
             )
             label.text = "xcost = 0"
 
-    def make_queries(self, simulation_number=10000, time_limit=1000, cost_limit=400):
+    def make_queries(self, simulation_number=10000, time_limit=None, cost_limit=None):
         """Uppaal and Stratego queries on the model."""
         goal_name = self.serial_to_location_name[self.graph.accepting_state.serialize()]
         goal_name = "AttackDefenseGraph." + goal_name
         queries = etree.SubElement(self.nta, "queries")
-        # Fast strategy
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = f"strategy fast = minE(time)[time<={time_limit}]: <>{goal_name}"
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Fast strategy"
-        # Expected time under fast
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = (
-            f"E[time<={time_limit};{simulation_number}](max: time) under fast"
-        )
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Expected time under fast"
-        # Expected cost under fast
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = (
-            f"E[time<={time_limit};{simulation_number}](max: cost) under fast"
-        )
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Expected cost under fast"
-        # Success probability under fast
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = f"Pr[time<=100](<>{goal_name}) under fast"
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Success probability under fast"
 
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        comment = etree.SubElement(query, "comment")
+        # Fast strategy
+        if time_limit is None and cost_limit is None:
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = f"strategy fast = minE(time)[time<=10000]: <>{goal_name}"
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Fast strategy"
+            # Expected time under fast
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = (
+                f"E[time<=10000;{simulation_number}](max: time) under fast"
+            )
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Expected time under fast"
+            # Expected cost under fast
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = (
+                f"E[time<=10000;{simulation_number}](max: cost) under fast"
+            )
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Expected cost under fast"
+            # Success probability under fast
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = f"Pr[time<=100](<>{goal_name}) under fast"
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Success probability under fast"
 
         # Cheap strategy
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = f"strategy cheap = minE(cost)[time<={time_limit}]: <>{goal_name}"
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Cheap strategy"
-        # Expected time under cheap
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = (
-            f"E[time<={time_limit};{simulation_number}](max: time) under cheap"
-        )
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Expected time under cheap"
-        # Expected cost under cheap
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = (
-            f"E[time<={time_limit};{simulation_number}](max: cost) under cheap"
-        )
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Expected cost under cheap"
-        # Success probability under cheap
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = f"Pr[time<={time_limit}](<>{goal_name}) under cheap"
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Success probability under cheap"
+        if time_limit is not None:
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = f"strategy cheap = minE(cost)[time<={time_limit}]: <>{goal_name}"
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Cheap strategy"
+            # Expected time under cheap
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = (
+                f"E[time<={time_limit};{simulation_number}](max: time) under cheap"
+            )
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Expected time under cheap"
+            # Expected cost under cheap
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = (
+                f"E[time<={time_limit};{simulation_number}](max: cost) under cheap"
+            )
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Expected cost under cheap"
+            # Success probability under cheap
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = f"Pr[time<={time_limit}](<>{goal_name}) under cheap"
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Success probability under cheap"
 
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        comment = etree.SubElement(query, "comment")
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            comment = etree.SubElement(query, "comment")
 
         # Limited cost strategy
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = (
-            f"strategy limited_cost = minE(time)[cost<={cost_limit}]: <>{goal_name}"
-        )
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Limited cost fastest strategy"
-        # Expected time under cheap
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = (
-            f"E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost"
-        )
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Expected time under limited cost"
-        # Expected cost under cheap
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = (
-            f"E[cost<={cost_limit};{simulation_number}](max: cost) under limited_cost"
-        )
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Expected cost under limited cost"
-        # Success probability under cheap
-        query = etree.SubElement(queries, "query")
-        formula = etree.SubElement(query, "formula")
-        formula.text = f"Pr[cost<={cost_limit}](<>{goal_name}) under limited_cost"
-        comment = etree.SubElement(query, "comment")
-        comment.text = "Success probability under limited_cost"
+        if cost_limit is not None:
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = (
+                f"strategy limited_cost = minE(time)[cost<={cost_limit}]: <>{goal_name}"
+            )
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Limited cost fastest strategy"
+            # Expected time under cheap
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = (
+                f"E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost"
+            )
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Expected time under limited cost"
+            # Expected cost under cheap
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = (
+                f"E[cost<={cost_limit};{simulation_number}](max: cost) under limited_cost"
+            )
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Expected cost under limited cost"
+            # Success probability under cheap
+            query = etree.SubElement(queries, "query")
+            formula = etree.SubElement(query, "formula")
+            formula.text = f"Pr[cost<={cost_limit}](<>{goal_name}) under limited_cost"
+            comment = etree.SubElement(query, "comment")
+            comment.text = "Success probability under limited_cost"
 
 
 if __name__ == "__main__":
