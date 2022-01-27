@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>const int n_a = 2;
+const int n_d = 1;
+hybrid clock time;
+hybrid clock cost;
+
+hybrid clock xcost;
+
+hybrid clock x_a0, x_a1;
+const int t_a0 = 20, t_a1 = 10;
+//const int p_a0 = 1, p_a1 = 0.5;
+const int c_a0 = 10;
+const int cp_a1 = 2;
+hybrid clock x_d0;
+const int t_d0 = 10;
+//const int p_d0 = 1;
+</declaration>
+	<template>
+		<name x="0" y="0">AttackDefenseGraph</name>
+		<location id="id0" x="-136" y="340">
+			<name x="-186" y="306">____NORMAL</name>
+			<label kind="invariant" x="-186" y="360">cost' == 0 &amp;&amp;
+x_d0 &lt;= t_d0</label>
+		</location>
+		<location id="id1" x="-136" y="170">
+			<name x="-229" y="136">____ACTIVATION_COST__a0</name>
+			<label kind="invariant" x="-186" y="190">time' == 0 &amp;&amp;
+xcost &lt;= 1 &amp;&amp;
+cost' == c_a0 &amp;&amp;
+x_a0' == 0 &amp;&amp;
+x_a1' == 0 &amp;&amp;
+x_d0' == 0</label>
+		</location>
+		<location id="id2" x="34" y="170">
+			<name x="-16" y="136">a0____NORMAL</name>
+			<label kind="invariant" x="-16" y="190">cost' == 0 &amp;&amp;
+x_d0 &lt;= t_d0 &amp;&amp;
+x_a0 &lt;= t_a0</label>
+		</location>
+		<location id="id3" x="34" y="340">
+			<name x="-16" y="306">a0_a1____NORMAL</name>
+			<label kind="invariant" x="-16" y="360">cost' == cp_a1 &amp;&amp;
+x_d0 &lt;= t_d0 &amp;&amp;
+x_a0 &lt;= t_a0 &amp;&amp;
+x_a1 &lt;= t_a1</label>
+		</location>
+		<location id="id4" x="204" y="340">
+			<name x="154" y="306">a0_a1____NO_ACTIVATION</name>
+			<label kind="invariant" x="154" y="360">cost' == cp_a1 &amp;&amp;
+x_d0 &lt;= t_d0 &amp;&amp;
+x_a0 &lt;= t_a0 &amp;&amp;
+x_a1 &lt;= t_a1</label>
+		</location>
+		<location id="id5" x="374" y="340">
+			<name x="348" y="306">__g0__NORMAL</name>
+			<label kind="invariant" x="323" y="365">time' == 0 &amp;&amp;
+cost' == 0</label>
+		</location>
+		<location id="id6" x="204" y="170">
+			<name x="154" y="136">a0____NO_ACTIVATION</name>
+			<label kind="invariant" x="154" y="190">cost' == 0 &amp;&amp;
+x_d0 &lt;= t_d0 &amp;&amp;
+x_a0 &lt;= t_a0</label>
+		</location>
+		<location id="id7" x="-136" y="510">
+			<name x="-186" y="476">a1____NORMAL</name>
+			<label kind="invariant" x="-186" y="530">cost' == cp_a1 &amp;&amp;
+x_d0 &lt;= t_d0 &amp;&amp;
+x_a1 &lt;= t_a1</label>
+		</location>
+		<location id="id8" x="34" y="510">
+			<name x="-16" y="476">a1____ACTIVATION_COST__a0</name>
+			<label kind="invariant" x="-16" y="530">time' == 0 &amp;&amp;
+xcost &lt;= 1 &amp;&amp;
+cost' == c_a0 &amp;&amp;
+x_a0' == 0 &amp;&amp;
+x_a1' == 0 &amp;&amp;
+x_d0' == 0</label>
+		</location>
+		<location id="id9" x="-136" y="646">
+			<name x="-186" y="612">a1____NO_ACTIVATION</name>
+			<label kind="invariant" x="-186" y="666">cost' == cp_a1 &amp;&amp;
+x_d0 &lt;= t_d0 &amp;&amp;
+x_a1 &lt;= t_a1</label>
+		</location>
+		<branchpoint id="id10" x="204" y="272">
+		</branchpoint>
+		<branchpoint id="id11" x="34" y="646">
+		</branchpoint>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="assignment" x="-136" y="289">xcost = 0</label>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id7"/>
+			<label kind="assignment" x="-195" y="425">x_a1 = 0</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-93" y="170">xcost &gt;= 1</label>
+			<label kind="assignment" x="-93" y="153">x_a0 = 0</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="assignment" x="-25" y="255">x_a1 = 0</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id6"/>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id4"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="guard" x="255" y="340">x_a0 &gt;= t_a0</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id4"/>
+			<target ref="id10"/>
+			<label kind="guard" x="213" y="280">x_a1 &gt;= t_a1</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id4"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-110" y="408">x_d0 &gt;= t_d0</label>
+			<label kind="assignment" x="-93" y="425">x_d0 = 0</label>
+			<nail x="136" y="408"/>
+			<nail x="-68" y="408"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id5"/>
+			<label kind="probability" x="272" y="255">500</label>
+			<nail x="374" y="272"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id2"/>
+			<label kind="probability" x="102" y="263">500</label>
+			<nail x="136" y="272"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id6"/>
+			<target ref="id5"/>
+			<label kind="guard" x="255" y="153">x_a0 &gt;= t_a0</label>
+			<nail x="374" y="170"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id6"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-59" y="68">x_d0 &gt;= t_d0</label>
+			<label kind="assignment" x="-51" y="43">x_d0 = 0</label>
+			<nail x="204" y="68"/>
+			<nail x="-272" y="68"/>
+			<nail x="-272" y="340"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="assignment" x="-93" y="493">xcost = 0</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id9"/>
+		</transition>
+		<transition controllable="false">
+			<source ref="id8"/>
+			<target ref="id3"/>
+			<label kind="guard" x="34" y="459">xcost &gt;= 1</label>
+			<label kind="assignment" x="34" y="442">x_a0 = 0</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id9"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-110" y="629">x_a1 &gt;= t_a1</label>
+		</transition>
+		<transition controllable="false">
+			<source ref="id9"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-246" y="629">x_d0 &gt;= t_d0</label>
+			<label kind="assignment" x="-229" y="646">x_d0 = 0</label>
+			<nail x="-272" y="646"/>
+			<nail x="-272" y="340"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id5"/>
+			<label kind="probability" x="85" y="654">500</label>
+			<nail x="374" y="646"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id0"/>
+			<label kind="probability" x="43" y="697">500</label>
+			<nail x="34" y="748"/>
+			<nail x="-272" y="748"/>
+			<nail x="-272" y="340"/>
+		</transition>
+	</template>
+	<system>system AttackDefenseGraph;</system>
+	<queries>
+		<query>
+			<formula>strategy cheap = minE(cost)[time&lt;=10]: &lt;&gt;AttackDefenseGraph.__g0__NORMAL</formula>
+			<comment>Cheap strategy</comment>
+		</query>
+		<query>
+			<formula>E[time&lt;=10;10000](max: time) under cheap</formula>
+			<comment>Expected time under cheap</comment>
+		</query>
+		<query>
+			<formula>E[time&lt;=10;10000](max: cost) under cheap</formula>
+			<comment>Expected cost under cheap</comment>
+		</query>
+		<query>
+			<formula>Pr[time&lt;=10](&lt;&gt;AttackDefenseGraph.__g0__NORMAL) under cheap</formula>
+			<comment>Success probability under cheap</comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>

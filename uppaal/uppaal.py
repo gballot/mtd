@@ -34,7 +34,7 @@ class UppaalExporter:
         self.output_file = open(self.output_file_name, mode)
 
     def close_file(self):
-        self.output_file.close
+        self.output_file.close()
 
     def make_xml(self, simulation_number=10000, time_limit=1000, cost_limit=400):
         """XML file interpretable by Uppaal Stratego."""
@@ -233,9 +233,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
             for activated in state.activated:
                 invariant += f" &&\nx_{activated.name} <= t_{activated.name}"
         elif state.state_type == StateType.ACTIVATION_COST:
-            invariant = (
-                f"time' == 0 &&\nxcost <= 1 &&\ncost' == c_{state.attack.name}"
-            )
+            invariant = f"time' == 0 &&\nxcost <= 1 &&\ncost' == c_{state.attack.name}"
             for attack in self.graph.tree.attacks:
                 invariant += f" &&\nx_{attack.name}' == 0"
             for defense in self.graph.tree.defenses:
@@ -337,17 +335,13 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
             # Expected time under fast
             query = etree.SubElement(queries, "query")
             formula = etree.SubElement(query, "formula")
-            formula.text = (
-                f"E[time<=10000;{simulation_number}](max: time) under fast"
-            )
+            formula.text = f"E[time<=10000;{simulation_number}](max: time) under fast"
             comment = etree.SubElement(query, "comment")
             comment.text = "Expected time under fast"
             # Expected cost under fast
             query = etree.SubElement(queries, "query")
             formula = etree.SubElement(query, "formula")
-            formula.text = (
-                f"E[time<=10000;{simulation_number}](max: cost) under fast"
-            )
+            formula.text = f"E[time<=10000;{simulation_number}](max: cost) under fast"
             comment = etree.SubElement(query, "comment")
             comment.text = "Expected cost under fast"
             # Success probability under fast
@@ -361,7 +355,9 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         if time_limit is not None:
             query = etree.SubElement(queries, "query")
             formula = etree.SubElement(query, "formula")
-            formula.text = f"strategy cheap = minE(cost)[time<={time_limit}]: <>{goal_name}"
+            formula.text = (
+                f"strategy cheap = minE(cost)[time<={time_limit}]: <>{goal_name}"
+            )
             comment = etree.SubElement(query, "comment")
             comment.text = "Cheap strategy"
             # Expected time under cheap
@@ -403,17 +399,13 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
             # Expected time under cheap
             query = etree.SubElement(queries, "query")
             formula = etree.SubElement(query, "formula")
-            formula.text = (
-                f"E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost"
-            )
+            formula.text = f"E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost"
             comment = etree.SubElement(query, "comment")
             comment.text = "Expected time under limited cost"
             # Expected cost under cheap
             query = etree.SubElement(queries, "query")
             formula = etree.SubElement(query, "formula")
-            formula.text = (
-                f"E[cost<={cost_limit};{simulation_number}](max: cost) under limited_cost"
-            )
+            formula.text = f"E[cost<={cost_limit};{simulation_number}](max: cost) under limited_cost"
             comment = etree.SubElement(query, "comment")
             comment.text = "Expected cost under limited cost"
             # Success probability under cheap

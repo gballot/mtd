@@ -7,83 +7,69 @@ from optimizer import Optimizer
 
 sys.setrecursionlimit(10 ** 6)
 
-a0 = Attack(
-    completion_time=100,
-    success_probability=1,
-    activation_cost=10,
-    name="a0",
-)
-a1 = Attack(completion_time=10, success_probability=1, activation_cost=100, name="a1")
-a2 = Attack(completion_time=20, success_probability=1, activation_cost=20, name="a2")
-a3 = Attack(completion_time=700, success_probability=0.95, activation_cost=1, name="a3")
-a4 = Attack(completion_time=200, success_probability=0.75, activation_cost=6, name="a4")
-a5 = Attack(completion_time=20, success_probability=0.66, activation_cost=1, name="a5")
-a6 = Attack(completion_time=100, success_probability=0.9, activation_cost=1, proportional_cost=1, name="a6")
-a7 = Attack(completion_time=30, success_probability=0.1, activation_cost=1, name="a7")
+a0 = Attack(completion_time=20, success_probability=1, activation_cost=10, name="a0")
+a1 = Attack(completion_time=10, success_probability=0.5, proportional_cost=2, name="a1")
 
-d0 = Defense(period=50, success_probability=1, name="d0", cost=1)
-d1 = Defense(period=40, success_probability=0.8, name="d1", cost=1)
-d2 = Defense(period=40, success_probability=0.3, name="d2", cost=1)
-d3 = Defense(period=20, success_probability=0.7, name="d3", cost=1)
-d4 = Defense(period=20, success_probability=0.7, name="d4", cost=1)
+d0 = Defense(period=15, success_probability=1, name="d0", cost=1)
 
 g0 = Goal(
-    children=[d0, a0, a1], operation_type=OperationType.AND, reset=False, name="g0"
-)
-g1 = Goal(children=[g0, a2], operation_type=OperationType.OR, name="g1")
-g7 = Goal(children=[d3, a7], operation_type=OperationType.AND, reset=False, name="g7")
-g6 = Goal(children=[a5, a6], operation_type=OperationType.AND, name="g6")
-g5 = Goal(children=[g6, g7], operation_type=OperationType.AND, name="g5")
-g4 = Goal(children=[d2, a4, g5], operation_type=OperationType.OR, reset=True, name="g4")
-g3 = Goal(children=[d1, g4], operation_type=OperationType.EDGE, reset=True, name="g3")
-g2 = Goal(children=[a3, g3], operation_type=OperationType.OR, name="g2")
-gt = Goal(
-    children=[g1, g2, d4], operation_type=OperationType.OR, reset=False, name="gt"
+    children=[d0, a0, a1], operation_type=OperationType.OR, reset=False, name="g0"
 )
 
-#gtest = Goal(children=[a1, a0, d0], operation_type=OperationType.OR, name="g0")
-#gtest2 = Goal(children=[gtest, a2], operation_type=OperationType.OR, name="gt")
-
-tree = Tree(gt)
+tree = Tree(g0)
 
 optimizer = Optimizer(tree)
 optimizer.export("output.xml", simulation_number=10000, cost_limit=400)
 
 # Default defense time
-E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml", time_limit=1000)
-print(
-        f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    "output.xml", time_limit=1000
 )
-E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml", time_limit=1000)
 print(
-        f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
 )
-E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml", time_limit=20)
-print(
-        f"With time limit={20} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    "output.xml", time_limit=1000
 )
-E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml", time_limit=10)
 print(
-        f"With time limit={10} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+)
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    "output.xml", time_limit=20
+)
+print(
+    f"With time limit={20} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+)
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    "output.xml", time_limit=10
+)
+print(
+    f"With time limit={10} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
 )
 # Set new defense time
-optimizer.set_defense_times({"d0": 100, "d1": 20})
-print("New defense time: d0-> 100, d1-> 20")
-E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml", time_limit=1000)
-print(
-        f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+optimizer.set_defense_times({"d0": 100})
+print("New defense time: d0-> 100")
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    "output.xml", time_limit=1000
 )
-E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml", time_limit=100)
 print(
-        f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
 )
-E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml", time_limit=20)
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    "output.xml", time_limit=100
+)
 print(
-        f"With time limit={20} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
 )
-E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify("output.xml", time_limit=10)
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    "output.xml", time_limit=20
+)
 print(
-        f"With time limit={10} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"With time limit={20} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
 )
-
-# optimizer.minimize(50, {"d0":1}, time_limit=100) TODO
+E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    "output.xml", time_limit=10
+)
+print(
+    f"With time limit={10} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+)

@@ -26,20 +26,33 @@ class Optimizer:
                 defense.period = times[defense.name]
         self.exporter.set_defense_times(times)
 
-    def minimize(self, defense_cost_limit, defense_cost_proportions, time_limit=None, cost_limit=None):
+    def minimize(
+        self,
+        defense_cost_limit,
+        defense_cost_proportions,
+        time_limit=None,
+        cost_limit=None,
+    ):
         defenses = self.tree.defenses
         n_d = len(defenses)
-        coeficients_defenses = np.array([[c[1] for c in sorted(list(defense_cost_proportions.items()))]])
-        constraint_matrix = np.concatenate([np.eye(n_d), coeficients_defenses], dtype=float)
+        coeficients_defenses = np.array(
+            [[c[1] for c in sorted(list(defense_cost_proportions.items()))]]
+        )
+        constraint_matrix = np.concatenate(
+            [np.eye(n_d), coeficients_defenses], dtype=float
+        )
         left_bound = np.ones(n_d + 1)
         left_bound[-1] = defense_cost_limit
         right_bound = np.full(n_d + 1, np.inf)
         right_bound[-1] = np.inf
         linear_constraint = LinearConstraint(constraint_matrix, left_bound, right_bound)
-        result = minimize(lambda td:self.evaluate(td, time_limit=time_limit, cost_limit=cost_limit), np.ones(n_d), method='trust-constr')
+        result = minimize(
+            lambda td: self.evaluate(td, time_limit=time_limit, cost_limit=cost_limit),
+            np.ones(n_d),
+            method="trust-constr",
+        )
         print(result.x)
         return result
-
 
     def export(
         self, file_name, simulation_number=10000, time_limit=1000, cost_limit=400
@@ -48,7 +61,9 @@ class Optimizer:
         self.exporter = UppaalExporter(self.graph, file_name)
         self.exporter.make_xml(simulation_number, time_limit, cost_limit)
 
-    def verify(self, file_name, simulation_number=10000, time_limit=None, cost_limit=None):
+    def verify(
+        self, file_name, simulation_number=10000, time_limit=None, cost_limit=None
+    ):
         self.exporter.set_queries(simulation_number, time_limit, cost_limit)
         command = f"{self.verifyta_prefix}verifyta -s {file_name}"
         process = subprocess.run(command.split(), capture_output=True, encoding="utf-8")
