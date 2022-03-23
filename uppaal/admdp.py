@@ -99,38 +99,17 @@ class State(metaclass=Unique):
         self.accepting = accepting
         adg.propagate(self.activated, self.completed)
         adg.reduce_activated_completed(self.activated, self.completed)
+        self.adg = adg
         # Build subadgs of nodes that doesn't matter anymore
-        self.completed_subadg = []
-        for node in self.completed:
-            if node not in self.completed_subadg:
-                self.completed_subadg += [node]
-                if node.node_type == NodeType.SUBsubgoal and not node.reset:
-                    node.dfs(self.completed_subadg)
+        self.completed_subadg = self.adg.completed_subadg(self.completed)
 
         # Build list of defenses that matter
         self.active_defenses = []
-        for attack in self.activated:
-            if attack.parent is None:
-                continue
-            defense = attack.parent.defense_child
-            if defense is not None and defense not in self.active_defenses:
-                self.active_defenses.append(defense)
+        for node in self.activated + self.completed:
+            for defense in node.defenses:
+                if defense not in self.active_defenses:
+                    self.active_defenses.append(defense)
 
-        for node in self.completed:
-            if (
-                node.node_type == NodeType.SUBsubgoal
-                and node.defense_child is not None
-                and node.reset
-            ):
-                self.active_defenses.append(node.defense_child)
-            if (
-                node.node_type == NodeType.ATTACK
-                and node.parent is not None
-                and node.parent.defense_child is not None
-            ):
-                self.active_defenses.append(node.parent.defense_child)
-
-        self.adg = adg
         self.state_type = state_type
 
     def __str__(self):
@@ -202,11 +181,7 @@ class AttackerState(State):
         # No activation edge
         if len(self.activated) > 0 or any(
             [
-                (
-                    node.node_type == NodeType.ATTACK
-                    and node.parent.defense_child is not None
-                )
-                or (node.node_type == NodeType.SUBsubgoal and node.reset)
+                len(node.defenses) > 0
                 for node in self.completed
             ]
         ):
@@ -596,7 +571,6 @@ if __name__ == "__main__":
                     ),
                 ],
                 operation_type=OperationType.OR,
-                reset=False,
                 name="g1",
             ),
             Attack(
@@ -608,7 +582,6 @@ if __name__ == "__main__":
             Defense(period=5, success_probability=0.6, name="d0"),
         ],
         operation_type=OperationType.AND,
-        reset=False,
         name="g0",
     )
     adg = ADG(root)

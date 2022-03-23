@@ -209,13 +209,17 @@ class ADG:
 
 
     def has_checkpoint_ancestor(self, subgoal, completed):
-        TODO: ne dois pas renvoyer le noeud lui meme
+        #TODO: ne dois pas renvoyer le noeud lui meme. Done?
         if subgoal in completed and not subgoal.defenses:
             return True
         elif not subgoal.parents:
             return False
         else:
             return all([self.has_checkpoint_ancestor(parent, completed) for parent in subgoal.parents])
+
+    def completed_subadg(self, completed):
+        return [node for node in self.nodes if self.has_checkpoint_ancestor(node, completed)]
+
 
     def reduce_activated_completed(self, activated, completed):
         # Remove completed nodes that have a checkpoint in all paths leading to the main subgoal
@@ -226,4 +230,8 @@ class ADG:
         # Remove activated nodes that have a checkpoint in all paths leading to the main subgoal
         for node in activated.copy():
             if self.has_checkpoint_ancestor(node, old_completed):
+                activated.remove(node)
+        # Remove activated nodes that are comleted
+        for node in activated.copy():
+            if node in completed:
                 activated.remove(node)
