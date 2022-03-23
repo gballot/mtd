@@ -78,7 +78,6 @@ g_0 = Subgoal(children=[g_1, g_ts], operation_type=OperationType.OR, name="g_0")
 adg = ADG(g_0)
 
 optimizer = Optimizer(adg)
-breakpoint()
 optimizer.export("output.xml", simulation_number=10000, cost_limit=400)
 
 # Default defense time
