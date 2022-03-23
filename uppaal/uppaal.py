@@ -158,8 +158,9 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         """Locations of the template."""
         self.serial_to_id[state.serialize()] = f"id{self.state_id}"
         self.id_to_serial[f"id{self.state_id}"] = state.serialize()
-        location_x, location_y = self.dx * (self.state_id // self.lx), self.dy * (
-            self.state_id % self.lx
+        location_x, location_y = (
+            self.dx * (self.state_id // self.lx),
+            self.dy * (self.state_id % self.lx),
         )
         self.serial_to_position[state.serialize()] = (location_x, location_y)
 
@@ -185,8 +186,9 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
     def make_branchpoint(self, state, template):
         self.serial_to_id[state.serialize()] = f"id{self.state_id}"
         self.id_to_serial[f"id{self.state_id}"] = state.serialize()
-        branchpoint_x, branchpoint_y = self.dx * (self.state_id // self.lx), self.dy * (
-            self.state_id % self.lx
+        branchpoint_x, branchpoint_y = (
+            self.dx * (self.state_id // self.lx),
+            self.dy * (self.state_id % self.lx),
         )
         self.serial_to_position[state.serialize()] = (branchpoint_x, branchpoint_y)
 

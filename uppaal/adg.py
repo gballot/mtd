@@ -128,11 +128,10 @@ class Attack(Node):
         activation_cost=None,
         proportional_cost=None,
         parents=None,
+        defenses=None,
     ):
         super().__init__(
-            parents=parents,
-            node_type=NodeType.ATTACK,
-            name=name,
+            parents=parents, node_type=NodeType.ATTACK, name=name, defenses=defenses
         )
         self.completion_time = completion_time
         self.success_probability = success_probability
@@ -143,9 +142,7 @@ class Attack(Node):
 class Defense(Node):
     def __init__(self, period, success_probability, cost, name, parents=None):
         super().__init__(
-            parents=parents,
-            node_type=NodeType.DEFENSE,
-            name=name,
+            parents=parents, node_type=NodeType.DEFENSE, name=name,
         )
         self.period = period
         self.success_probability = success_probability
@@ -159,8 +156,8 @@ class ADG:
         self.root.set_parents()
         self.init_dfs()
 
-    def get_children(self, include_defense=False):
-        return self.root.get_children(include_defense)
+    def get_children(self):
+        return self.root.get_children()
 
     def init_dfs(self):
         """Sould be used only at initialization to set self.attacks, self.defenses
@@ -206,30 +203,33 @@ class ADG:
                         fixed_point = False
                         completed.append(parent)
 
-
-
-    def has_checkpoint_ancestor(self, subgoal, completed):
-        #TODO: ne dois pas renvoyer le noeud lui meme. Done?
-        if subgoal in completed and not subgoal.defenses:
+    def has_checkpoint_ancestors(self, subgoal, completed, include_checkpoint_itself=False):
+        if include_checkpoint_itself and subgoal in completed and not subgoal.defenses:
             return True
         elif not subgoal.parents:
             return False
         else:
-            return all([self.has_checkpoint_ancestor(parent, completed) for parent in subgoal.parents])
+            return all(
+                [
+                    self.has_checkpoint_ancestors(parent, completed, include_checkpoint_itself=True)
+                    for parent in subgoal.parents
+                ]
+            )
 
     def completed_subadg(self, completed):
-        return [node for node in self.nodes if self.has_checkpoint_ancestor(node, completed)]
-
+        return [
+            node for node in self.nodes if self.has_checkpoint_ancestors(node, completed)
+        ]
 
     def reduce_activated_completed(self, activated, completed):
         # Remove completed nodes that have a checkpoint in all paths leading to the main subgoal
         old_completed = completed.copy()
         for node in old_completed:
-            if self.has_checkpoint_ancestor(node, old_completed):
+            if self.has_checkpoint_ancestors(node, old_completed):
                 completed.remove(node)
         # Remove activated nodes that have a checkpoint in all paths leading to the main subgoal
         for node in activated.copy():
-            if self.has_checkpoint_ancestor(node, old_completed):
+            if self.has_checkpoint_ancestors(node, old_completed):
                 activated.remove(node)
         # Remove activated nodes that are comleted
         for node in activated.copy():

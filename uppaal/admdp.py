@@ -45,10 +45,7 @@ class ADMDP:
     def build_admdp(self):
         """Build ADMDP from given ADG."""
         self.initial_state = AttackerState(
-            activated=[],
-            completed=[],
-            adg=self.adg,
-            initial=True,
+            activated=[], completed=[], adg=self.adg, initial=True,
         )
         self.initial_state.build(admdp=self)
 
@@ -180,10 +177,7 @@ class AttackerState(State):
 
         # No activation edge
         if len(self.activated) > 0 or any(
-            [
-                len(node.defenses) > 0
-                for node in self.completed
-            ]
+            [len(node.defenses) > 0 for node in self.completed]
         ):
             self.build_no_activation_edge(admdp)
 
@@ -553,40 +547,26 @@ class ActivationCostEdge(Edge):
 
 
 if __name__ == "__main__":
-    root = subgoal(
-        children=[
-            subgoal(
-                children=[
-                    Attack(
-                        completion_time=10,
-                        success_probability=0.5,
-                        activation_cost=5,
-                        name="a0",
-                    ),
-                    Attack(
-                        completion_time=3,
-                        success_probability=0.2,
-                        activation_cost=1,
-                        name="a1",
-                    ),
-                ],
-                operation_type=OperationType.OR,
-                name="g1",
-            ),
-            Attack(
-                completion_time=7,
-                success_probability=0.7,
-                activation_cost=10,
-                name="a2",
-            ),
-            Defense(period=5, success_probability=0.6, name="d0"),
-        ],
-        operation_type=OperationType.AND,
-        name="g0",
+    d_0 = Defense(period=15, success_probability=1, name="d_0", cost=1)
+    a_0 = Attack(
+        completion_time=20,
+        success_probability=1,
+        activation_cost=10,
+        proportional_cost=2,
+        name="a_0",
+        defenses=[d_0]
     )
-    adg = ADG(root)
+    a_1 = Attack(
+        completion_time=20,
+        success_probability=1,
+        activation_cost=10,
+        proportional_cost=2,
+        name="a_1",
+    )
+    g_0 = Subgoal(children=[a_0,a_1], operation_type= OperationType.OR, name='g_0')
+    adg = ADG(g_0)
     print(
-        f"parent of {adg.root}'s child {adg.get_children()[1]} is {adg.get_children()[1].parent}"
+        f"parent of {adg.root}'s child {adg.get_children()[1]} is {adg.get_children()[1].parents[0]}"
     )
     admdp = ADMDP(adg)
     print(admdp)
