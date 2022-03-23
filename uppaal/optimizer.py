@@ -3,8 +3,8 @@ import numpy as np
 import subprocess
 import re
 
-from graph import Graph
-from tree import Tree, Goal, Attack, Defense, OperationType
+from admdp import ADMDP
+from adg import ADG, Subgoal, Attack, Defense, OperationType
 from uppaal import UppaalExporter
 
 
@@ -15,13 +15,13 @@ def score(E_time, E_cost, P_success_inf, P_success_sup):
 class Optimizer:
     verifyta_prefix = "/home/gabriel/uppaal64-4.1.20-stratego-7/bin-Linux/"
 
-    def __init__(self, tree):
-        self.tree = tree
-        self.graph = Graph(self.tree)
+    def __init__(self, adg):
+        self.adg = adg
+        self.admdp = ADMDP(self.adg)
 
     def set_defense_times(self, times):
         """times is a dictionary with names of the defenses as key."""
-        for defense in self.tree.defenses:
+        for defense in self.adg.defenses:
             if defense.name in times:
                 defense.period = times[defense.name]
         self.exporter.set_defense_times(times)
@@ -33,7 +33,7 @@ class Optimizer:
         time_limit=None,
         cost_limit=None,
     ):
-        defenses = self.tree.defenses
+        defenses = self.adg.defenses
         n_d = len(defenses)
         coeficients_defenses = np.array(
             [[c[1] for c in sorted(list(defense_cost_proportions.items()))]]
@@ -58,7 +58,7 @@ class Optimizer:
         self, file_name, simulation_number=10000, time_limit=1000, cost_limit=400
     ):
         self.file_name = file_name
-        self.exporter = UppaalExporter(self.graph, file_name)
+        self.exporter = UppaalExporter(self.admdp, file_name)
         self.exporter.make_xml(simulation_number, time_limit, cost_limit)
 
     def verify(
@@ -72,7 +72,7 @@ class Optimizer:
         output = output.replace("\x1b[K", "")
         output = output.replace("\n\n\n", "\n\n")
         formulas = output.split("\n\n")
-        # Formula 9: strategy limited_cost = minE(time)[cost<=400]: <>AttackDefenseGraph.goal
+        # Formula 9: strategy limited_cost = minE(time)[cost<=400]: <>AttackDefenseADMDP.goal
         strategy_found = "Formula is satisfied." in formulas[1]
         if strategy_found:
             # Formula 10: E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost
@@ -101,7 +101,7 @@ class Optimizer:
             cost_distribution_low = float(cost_distribution_matches[0][0])
             cost_distribution_up = float(cost_distribution_matches[1][0])
             cost_distribution_hist = [int(m[0]) for m in cost_distribution_matches[4:]]
-            # Formula 11: Pr[cost<={cost_limit}](<>AttackDefenseGraph.goal) under limited_cost
+            # Formula 11: Pr[cost<={cost_limit}](<>AttackDefenseADMDP.goal) under limited_cost
             P_success_inf = float(
                 re.findall(
                     "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
@@ -127,7 +127,7 @@ class Optimizer:
         self, times, simulation_number=10000, time_limit=None, cost_limit=None
     ):
         if type(times) is not dict:
-            keys = sorted([d.name for d in self.tree.defenses])
+            keys = sorted([d.name for d in self.adg.defenses])
             times_dict = dict()
             for i in range(len(keys)):
                 times_dict[keys[i]] = times[i]

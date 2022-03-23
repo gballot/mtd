@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as etree
-from graph import Graph, StateType, EdgeType
-from tree import Tree, Goal, Attack, Defense, OperationType
+from admdp import ADMDP, StateType, EdgeType
+from adg import ADG, Subgoal, Attack, Defense, OperationType
 
 
 def list_to_string(names, prefix="", values=None):
@@ -26,8 +26,8 @@ class UppaalExporter:
     serial_to_location_name = dict()
     dx, dy, lx = 100, 100, 8
 
-    def __init__(self, graph, output_file_name):
-        self.graph = graph
+    def __init__(self, admdp, output_file_name):
+        self.admdp = admdp
         self.output_file_name = output_file_name
 
     def open_file(self, mode="w"):
@@ -47,7 +47,7 @@ class UppaalExporter:
         self.make_declaration()
         self.make_templates()
         system = etree.SubElement(self.nta, "system")
-        system.text = "system AttackDefenseGraph;"
+        system.text = "system AttackDefenseADMDP;"
         self.make_queries(simulation_number, time_limit, cost_limit)
         etree.indent(self.nta, space="\t", level=0)
         self.output_file.write(
@@ -84,22 +84,22 @@ class UppaalExporter:
 
     def make_declaration(self, remake=False):
         """Declaration section of Uppaal."""
-        tree = self.graph.tree
-        attack_names = [attack.name for attack in tree.attacks]
-        defense_names = [defense.name for defense in tree.defenses]
-        t_a = [attack.completion_time for attack in tree.attacks]
-        p_a = [attack.success_probability for attack in tree.attacks]
-        c_a = [attack.activation_cost for attack in tree.attacks]
-        cp_a = [attack.proportional_cost for attack in tree.attacks]
-        t_d = [defense.period for defense in tree.defenses]
-        p_d = [defense.success_probability for defense in tree.defenses]
+        adg = self.admdp.adg
+        attack_names = [attack.name for attack in adg.attacks]
+        defense_names = [defense.name for defense in adg.defenses]
+        t_a = [attack.completion_time for attack in adg.attacks]
+        p_a = [attack.success_probability for attack in adg.attacks]
+        c_a = [attack.activation_cost for attack in adg.attacks]
+        cp_a = [attack.proportional_cost for attack in adg.attacks]
+        t_d = [defense.period for defense in adg.defenses]
+        p_d = [defense.success_probability for defense in adg.defenses]
 
         if remake:
             declaration = self.nta.find("declaration")
         else:
             declaration = etree.SubElement(self.nta, "declaration")
-        declaration.text = f"""const int n_a = {len(tree.attacks)};
-const int n_d = {len(tree.defenses)};
+        declaration.text = f"""const int n_a = {len(adg.attacks)};
+const int n_d = {len(adg.defenses)};
 hybrid clock time;
 hybrid clock cost;
 
@@ -128,10 +128,10 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
         template_name = etree.SubElement(template, "name")
         template_name.set("x", "0")
         template_name.set("y", "0")
-        template_name.text = "AttackDefenseGraph"
+        template_name.text = "AttackDefenseADMDP"
         etree.SubElement(template, "parameter")
         etree.SubElement(template, "declaration")
-        states = self.graph.states
+        states = self.admdp.states
         for state in states.values():
             if (
                 state.state_type == StateType.NORMAL
@@ -198,7 +198,7 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
 
     def make_label(self, state, location, x, y):
         """Labels of locations (invariant only are needed)."""
-        # Stop time of goal
+        # Stop time of subgoal
         if state.accepting:
             label = etree.SubElement(
                 location,
@@ -227,16 +227,16 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
             if cost_connector == " ":
                 invariant += " 0"
             # Make defense clocks guards
-            for defense in self.graph.tree.defenses:
+            for defense in self.admdp.adg.defenses:
                 invariant += f" &&\nx_{defense.name} <= t_{defense.name}"
             # Make active attacks clocks guards
             for activated in state.activated:
                 invariant += f" &&\nx_{activated.name} <= t_{activated.name}"
         elif state.state_type == StateType.ACTIVATION_COST:
             invariant = f"time' == 0 &&\nxcost <= 1 &&\ncost' == c_{state.attack.name}"
-            for attack in self.graph.tree.attacks:
+            for attack in self.admdp.adg.attacks:
                 invariant += f" &&\nx_{attack.name}' == 0"
-            for defense in self.graph.tree.defenses:
+            for defense in self.admdp.adg.defenses:
                 invariant += f" &&\nx_{defense.name}' == 0"
 
         label.text = invariant
@@ -321,8 +321,8 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
 
     def make_queries(self, simulation_number=10000, time_limit=None, cost_limit=None):
         """Uppaal and Stratego queries on the model."""
-        goal_name = self.serial_to_location_name[self.graph.accepting_state.serialize()]
-        goal_name = "AttackDefenseGraph." + goal_name
+        goal_name = self.serial_to_location_name[self.admdp.accepting_state.serialize()]
+        goal_name = "AttackDefenseADMDP." + goal_name
         queries = etree.SubElement(self.nta, "queries")
 
         # Fast strategy
@@ -417,9 +417,9 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
 
 
 if __name__ == "__main__":
-    root = Goal(
+    root = Subgoal(
         children=[
-            Goal(
+            Subgoal(
                 children=[
                     Attack(
                         completion_time=10,
@@ -450,11 +450,11 @@ if __name__ == "__main__":
         reset=False,
         name="g0",
     )
-    tree = Tree(root)
+    adg = adg(root)
     print(
-        f"parent of {tree.root}'s child {tree.get_children()[1]} is {tree.get_children()[1].parent}"
+        f"parent of {adg.root}'s child {adg.get_children()[1]} is {adg.get_children()[1].parent}"
     )
-    graph = Graph(tree)
-    print(graph)
-    uppaal = UppaalExporter(graph, "output.xml")
+    admdp = ADMDP(adg)
+    print(admdp)
+    uppaal = UppaalExporter(admdp, "output.xml")
     uppaal.make_xml()

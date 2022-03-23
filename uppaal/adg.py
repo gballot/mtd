@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class NodeType(Enum):
-    GOAL = 1
+    SUBGOAL = 1
     ATTACK = 2
     DEFENSE = 3
 
@@ -18,27 +18,16 @@ class Node:
         parents=None,
         defenses=None,
         attack_childern=None,
-        goal_children=None,
+        subgoal_children=None,
         node_type=None,
         name=None,
     ):
-        self.parents = parents
-        self.defenses = defenses
+        self.parents = parents if parents else []
+        self.defenses = defenses if defenses else []
         self.node_type = node_type
-        if attack_childern:
-            self.attack_childern = attack_childern
-        else:
-            self.attack_childern = []
-
-        if goal_children:
-            self.goal_children = goal_children
-        else:
-            self.goal_children = []
-
-        if name:
-            self.name = name
-        else:
-            self.name = f"{self.node_type}:{id(self)}"
+        self.attack_childern = attack_childern if attack_childern else []
+        self.subgoal_children = subgoal_children if subgoal_children else []
+        self.name = name if name else f"{self.node_type}:{id(self)}"
 
     def __str__(self):
         return self.name
@@ -62,34 +51,37 @@ class Node:
         return self.name != other.name
 
     def get_children(self):
-        return self.attack_childern + self.goal_children
-
-    def check_parents(self, parents):
-        assert self.parents is None or set(self.parents) == set(parents)
+        return self.attack_childern + self.subgoal_children
 
     def set_parents(self, parents=None):
-        self.check_parents(parents)
-        self.parents = parents
+        if not parents:
+            self.parents = []
+        else:
+            self.parents.append(parents)
         for child in self.get_children():
             child.set_parents(self)
 
     def dfs(self, visited):
         for child in self.get_children():
-            visited.add(child)
-            child.dfs(visited)
+            if child not in visited:
+                visited.append(child)
+                child.dfs(visited)
 
     def dfs_parents(self, visited):
         for parent in self.parents:
-            visited.add(parent)
-            parent.dfs_parents(visited)
+            if parent not in visited:
+                visited.append(parent)
+                parent.dfs_parents(visited)
 
     def dfs_defenses(self, defenses):
-        defenses.add(self.defenses)
+        for defense in self.defenses:
+            if defense not in defenses:
+                defenses.append(defense)
         for child in self.get_children():
             child.dfs_defenses(defenses)
 
 
-class Goal(Node):
+class Subgoal(Node):
     def __init__(
         self,
         name,
@@ -97,31 +89,31 @@ class Goal(Node):
         children=None,
         defenses=None,
         attack_childern=None,
-        goal_children=None,
+        subgoal_children=None,
         parents=None,
     ):
         if children:
             assert defenses is None
             assert attack_childern is None
-            assert goal_children is None
+            assert subgoal_children is None
             defenses = []
             attack_childern = []
-            goal_children = []
+            subgoal_children = []
             for child in children:
                 if child.node_type == NodeType.DEFENSE:
                     defenses.append(child)
                 elif child.node_type == NodeType.ATTACK:
                     attack_childern.append(child)
-                elif child.node_type == NodeType.GOAL:
-                    goal_children.append(child)
+                elif child.node_type == NodeType.SUBGOAL:
+                    subgoal_children.append(child)
                 else:
                     raise Exception("Children without type")
         super().__init__(
-            parent=parent,
+            parents=parents,
             defenses=defenses,
             attack_childern=attack_childern,
-            goal_children=goal_children,
-            node_type=NodeType.GOAL,
+            subgoal_children=subgoal_children,
+            node_type=NodeType.SUBGOAL,
             name=name,
         )
         self.operation_type = operation_type
@@ -160,7 +152,7 @@ class Defense(Node):
         self.cost = cost
 
 
-class Tree:
+class ADG:
     def __init__(self, root):
         assert not root.defenses
         self.root = root
@@ -172,19 +164,20 @@ class Tree:
 
     def init_dfs(self):
         """Sould be used only at initialization to set self.attacks, self.defenses
-        self.goals."""
-        self.attacks = {}
-        self.defenses = {}
-        self.goals = {}
-        nodes = {}
+        self.subgoals."""
+        self.attacks = []
+        self.defenses = []
+        self.subgoals = []
+        nodes = []
         self.root.dfs_defenses(self.defenses)
         self.root.dfs(nodes)
         for node in nodes:
             if node.node_type == NodeType.ATTACK:
                 self.attacks.append(node)
-            elif node.node_type == NodeType.GOAL:
-                self.goals.append(node)
-        self.nodes = self.attacks + self.goals
+            elif node.node_type == NodeType.SUBGOAL:
+                self.subgoals.append(node)
+        self.nodes = self.attacks + self.subgoals
+
         self.defense_periods = []
         for defense in self.defenses:
             self.defense_periods.append(defense.period)
@@ -205,7 +198,7 @@ class Tree:
                                 parent.operation_type == OperationType.AND
                                 and {n.name for n in parent.attack_childern}
                                 <= {n.name for n in completed}
-                                and {n.name for n in parent.goal_children}
+                                and {n.name for n in parent.subgoal_children}
                                 <= {n.name for n in completed}
                             )
                         )
@@ -215,35 +208,22 @@ class Tree:
 
 
 
+    def has_checkpoint_ancestor(self, subgoal, completed):
+        TODO: ne dois pas renvoyer le noeud lui meme
+        if subgoal in completed and not subgoal.defenses:
+            return True
+        elif not subgoal.parents:
+            return False
+        else:
+            return all([self.has_checkpoint_ancestor(parent, completed) for parent in subgoal.parents])
+
     def reduce_activated_completed(self, activated, completed):
-        # Remove completed nodes that have a checkpoint in all paths leading to the main goal
-        TODO
-        for node in completed.copy():
-            checkpoint = False
-            current = node
-            while current.parents:
-                if checkpoint:
-                    break
-                for parent in current.parents.copy():
-                    current = parent
-                    if current in completed and not current.defenses:
-                        checkpoint = True
-                        break
-
-            if checkpoint:
+        # Remove completed nodes that have a checkpoint in all paths leading to the main subgoal
+        old_completed = completed.copy()
+        for node in old_completed:
+            if self.has_checkpoint_ancestor(node, old_completed):
                 completed.remove(node)
-        # Remove activated nodes that have a checkpoint above
+        # Remove activated nodes that have a checkpoint in all paths leading to the main subgoal
         for node in activated.copy():
-            if node in completed:
-                activated.remove(node)
-                break
-            checkpoint = False
-            current = node
-            while current.parent:
-                current = current.parent
-                if current in completed and not current.defenses:
-                    checkpoint = True
-                    break
-
-            if checkpoint:
+            if self.has_checkpoint_ancestor(node, old_completed):
                 activated.remove(node)
