@@ -58,7 +58,7 @@ class Node:
             self.parents = []
         else:
             self.parents.append(parents)
-        for child in self.get_children():
+        for child in self.get_children() + self.defenses:
             child.set_parents(self)
 
     def dfs(self, visited):
@@ -203,7 +203,9 @@ class ADG:
                         fixed_point = False
                         completed.append(parent)
 
-    def has_checkpoint_ancestors(self, subgoal, completed, include_checkpoint_itself=False):
+    def has_checkpoint_ancestors(
+        self, subgoal, completed, include_checkpoint_itself=False
+    ):
         if include_checkpoint_itself and subgoal in completed and not subgoal.defenses:
             return True
         elif not subgoal.parents:
@@ -211,14 +213,18 @@ class ADG:
         else:
             return all(
                 [
-                    self.has_checkpoint_ancestors(parent, completed, include_checkpoint_itself=True)
+                    self.has_checkpoint_ancestors(
+                        parent, completed, include_checkpoint_itself=True
+                    )
                     for parent in subgoal.parents
                 ]
             )
 
     def completed_subadg(self, completed):
         return [
-            node for node in self.nodes if self.has_checkpoint_ancestors(node, completed)
+            node
+            for node in self.nodes
+            if self.has_checkpoint_ancestors(node, completed)
         ]
 
     def reduce_activated_completed(self, activated, completed):

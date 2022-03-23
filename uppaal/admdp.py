@@ -26,14 +26,11 @@ def defense_activation_activated_completed(
 ):
     """Remove inplace the atomic attacks that are deactivated and the subgoals that are
     reseted with a successful defense activation."""
-    for subgoal in defense.parents:
-        if subgoal in destination_completed:
-            destination_completed.remove(subgoal)
-        for child in subgoal.get_children:
-            if child in destination_activated:
-                destination_activated.remove(child)
-            if child in destination_completed:
-                destination_completed.remove(child)
+    for node in defense.parents:
+        if node in destination_completed:
+            destination_completed.remove(node)
+        if node in destination_activated:
+            destination_activated.remove(node)
 
 
 class ADMDP:
@@ -170,7 +167,7 @@ class AttackerState(State):
         # Activation edges
         for attack in admdp.adg.attacks:
             if attack not in self.activated and attack not in self.completed_subadg:
-                if attack.activation_cost is None:
+                if attack.activation_cost is None or attack.activation_cost == 0:
                     self.build_activation_edges(attack, admdp)
                 else:
                     self.build_activation_cost_edge(attack, admdp)
@@ -554,7 +551,7 @@ if __name__ == "__main__":
         activation_cost=10,
         proportional_cost=2,
         name="a_0",
-        defenses=[d_0]
+        defenses=[d_0],
     )
     a_1 = Attack(
         completion_time=20,
@@ -563,7 +560,7 @@ if __name__ == "__main__":
         proportional_cost=2,
         name="a_1",
     )
-    g_0 = Subgoal(children=[a_0,a_1], operation_type= OperationType.OR, name='g_0')
+    g_0 = Subgoal(children=[a_0, a_1], operation_type=OperationType.OR, name="g_0")
     adg = ADG(g_0)
     print(
         f"parent of {adg.root}'s child {adg.get_children()[1]} is {adg.get_children()[1].parents[0]}"
