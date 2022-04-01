@@ -85,25 +85,37 @@ E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
     "output.xml", time_limit=1000
 )
 print(
-    f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"""With time limit={100} for the attack:
+    E(time) = {E_time}
+    E(cost) = {E_cost}
+    P(success) in [{P_success_inf}, {P_success_sup}]"""
 )
 E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
     "output.xml", time_limit=1000
 )
 print(
-    f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"""With time limit={100} for the attack:
+    E(time) = {E_time}
+    E(cost) = {E_cost}
+    P(success) in [{P_success_inf}, {P_success_sup}]"""
 )
 E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
     "output.xml", time_limit=20
 )
 print(
-    f"With time limit={20} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"""With time limit={20} for the attack:
+    E(time) = {E_time}
+    E(cost) = {E_cost}
+    P(success) in [{P_success_inf}, {P_success_sup}]"""
 )
 E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
     "output.xml", time_limit=10
 )
 print(
-    f"With time limit={10} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"""With time limit={10} for the attack:
+    E(time) = {E_time}
+    E(cost) = {E_cost}
+    P(success) in [{P_success_inf}, {P_success_sup}]"""
 )
 # Set new defense time
 optimizer.set_defense_times({"d0": 100})
@@ -112,23 +124,36 @@ E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
     "output.xml", time_limit=1000
 )
 print(
-    f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"""With time limit={100} for the attack:
+    E(time) = {E_time}
+    E(cost) = {E_cost}
+    P(success) in [{P_success_inf}, {P_success_sup}]
+    """
 )
 E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
     "output.xml", time_limit=100
 )
 print(
-    f"With time limit={100} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"""With time limit={100} for the attack:
+    E(time) = {E_time}
+    E(cost) = {E_cost}
+    P(success) in [{P_success_inf}, {P_success_sup}]"""
 )
 E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
     "output.xml", time_limit=20
 )
 print(
-    f"With time limit={20} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"""With time limit={20} for the attack:
+    E(time) = {E_time}
+    E(cost) = {E_cost}
+    P(success) in [{P_success_inf}, {P_success_sup}]"""
 )
 E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
     "output.xml", time_limit=10
 )
 print(
-    f"With time limit={10} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
+    f"""With time limit={10} for the attack:
+    E(time) = {E_time}
+    E(cost) = {E_cost}
+    P(success) in [{P_success_inf}, {P_success_sup}]"""
 )
