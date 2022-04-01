@@ -10,7 +10,7 @@ hybrid clock xcost;
 
 hybrid clock x_a_0, x_a_1;
 const int t_a_0 = 30, t_a_1 = 10;
-//const int p_a_0 = 1, p_a_1 = 0.5;
+const double p_a_0 = 1.0, p_a_1 = 0.5;
 const int c_a_0 = 50, c_a_1 = 0;
 const int cp_a_0 = 0, cp_a_1 = 1;
 hybrid clock x_d_0;
@@ -140,13 +140,13 @@ x_a_0 &lt;= t_a_0</label>
 		<transition>
 			<source ref="id10"/>
 			<target ref="id5"/>
-			<label kind="probability" x="-110" y="255">500</label>
+			<label kind="probability" x="-51" y="255">fint(p_a_1 * 1000)</label>
 			<nail x="68" y="272"/>
 		</transition>
 		<transition>
 			<source ref="id10"/>
 			<target ref="id2"/>
-			<label kind="probability" x="-187" y="255">500</label>
+			<label kind="probability" x="-246" y="255">fint((1-p_a_1) * 1000)</label>
 			<nail x="-238" y="272"/>
 		</transition>
 		<transition>
@@ -180,13 +180,13 @@ x_a_0 &lt;= t_a_0</label>
 		<transition>
 			<source ref="id11"/>
 			<target ref="id5"/>
-			<label kind="probability" x="-306" y="765">500</label>
+			<label kind="probability" x="-306" y="765">fint(p_a_1 * 1000)</label>
 			<nail x="68" y="782"/>
 		</transition>
 		<transition>
 			<source ref="id11"/>
 			<target ref="id0"/>
-			<label kind="probability" x="-340" y="816">500</label>
+			<label kind="probability" x="-340" y="816">fint((1-p_a_1) * 1000)</label>
 			<nail x="-340" y="884"/>
 			<nail x="-612" y="884"/>
 			<nail x="-612" y="374"/>

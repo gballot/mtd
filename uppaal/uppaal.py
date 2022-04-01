@@ -3,7 +3,7 @@ from admdp import ADMDP, StateType, EdgeType
 from adg import ADG, Subgoal, Attack, Defense, OperationType
 
 
-def list_to_string(names, prefix="", values=None):
+def list_to_string(names, prefix="", values=None, format_values=None):
     if len(names) == 0:
         return ""
     connector = ""
@@ -13,7 +13,10 @@ def list_to_string(names, prefix="", values=None):
             string += f"{connector}{prefix}{names[i]}"
             connector = ", "
         if values is not None and values[i] is not None:
-            string += f" = {values[i]}"
+            if format_values:
+                string += f" = {format_values.format(values[i])}"
+            else:
+                string += f" = {values[i]}"
     return string
 
 
@@ -107,7 +110,7 @@ hybrid clock xcost;
 
 hybrid clock {list_to_string(attack_names, prefix='x_')};
 const int {list_to_string(attack_names, prefix='t_', values=t_a)};
-//const int {list_to_string(attack_names, prefix='p_', values=p_a)};
+const double {list_to_string(attack_names, prefix='p_', values=p_a, format_values='{:.5f}')};
 const int {list_to_string(attack_names, prefix='c_', values=c_a)};
 """
         if any(cp_a):
@@ -119,7 +122,7 @@ const int {list_to_string(attack_names, prefix='c_', values=c_a)};
             declaration.text += f"""
 hybrid clock {list_to_string(defense_names, prefix='x_')};
 const int {list_to_string(defense_names, prefix='t_', values=t_d)};
-//const int {list_to_string(defense_names, prefix='p_', values=p_d)};
+const double {list_to_string(defense_names, prefix='p_', values=p_d, format_values='{:.5f}')};
 """
 
     def make_templates(self):
@@ -306,13 +309,26 @@ const int {list_to_string(defense_names, prefix='t_', values=t_d)};
                 {"kind": "guard", "x": str(label_x), "y": str(label_y)},
             )
             label.text = f"x_{edge.defense.name} >= t_{edge.defense.name}"
-        if edge.type == EdgeType.COMPLETION or edge.type == EdgeType.DEFENSE:
+        if edge.type == EdgeType.COMPLETION:
             label = etree.SubElement(
                 transition,
                 "label",
                 {"kind": "probability", "x": str(label_x), "y": str(label_y)},
             )
-            label.text = str(int(edge.success_probability * 1000))
+            if edge.success:
+                label.text = f"fint(p_{edge.attack.name} * 1000)"
+            else:
+                label.text = f"fint((1-p_{edge.attack.name}) * 1000)"
+        if edge.type == EdgeType.DEFENSE:
+            label = etree.SubElement(
+                transition,
+                "label",
+                {"kind": "probability", "x": str(label_x), "y": str(label_y)},
+            )
+            if edge.success:
+                label.text = f"fint(p_{edge.defense.name} * 1000)"
+            else:
+                label.text = f"fint((1-p_{edge.defense.name}) * 1000)"
         if edge.type == EdgeType.TO_ACTIVATION_COST:
             label = etree.SubElement(
                 transition,

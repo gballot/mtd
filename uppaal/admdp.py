@@ -166,7 +166,11 @@ class AttackerState(State):
         activation."""
         # Activation edges
         for attack in admdp.adg.attacks:
-            if attack not in self.activated and attack not in self.completed and attack not in self.completed_subadg:
+            if (
+                attack not in self.activated
+                and attack not in self.completed
+                and attack not in self.completed_subadg
+            ):
                 if attack.activation_cost is None or attack.activation_cost == 0:
                     self.build_activation_edges(attack, admdp)
                 else:

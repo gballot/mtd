@@ -68,14 +68,14 @@ a_fue = Attack(
 )
 
 
-g_tc = Subgoal(
-    children=[a_ad, a_ic], operation_type=OperationType.AND, name="g_tc"
-)
+g_tc = Subgoal(children=[a_ad, a_ic], operation_type=OperationType.AND, name="g_tc")
 g_up = Subgoal(children=[d_cp, a_sp], operation_type=OperationType.AND, name="g_up")
 g_ac = Subgoal(
     children=[d_cc, a_bf, a_ss], operation_type=OperationType.AND, name="g_ac"
 )
-g_th = Subgoal(children=[g_up, a_p, g_ac], operation_type=OperationType.AND, name="g_th")
+g_th = Subgoal(
+    children=[g_up, a_p, g_ac], operation_type=OperationType.AND, name="g_th"
+)
 g_hs = Subgoal(children=[d_dsr, a_fue], operation_type=OperationType.AND, name="g_hs")
 g_ts = Subgoal(children=[g_ac, g_hs], operation_type=OperationType.AND, name="g_ts")
 g_1 = Subgoal(children=[g_tc, g_th], operation_type=OperationType.OR, name="g_1")
