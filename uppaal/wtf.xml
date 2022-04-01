@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>const int n_a = 2;
+const int n_d = 1;
+hybrid clock time;
+hybrid clock cost;
+
+hybrid clock xcost;
+
+hybrid clock x_a_0, x_a_1;
+const int t_a_0 = 30, t_a_1 = 10;
+//const int p_a_0 = 1, p_a_1 = 0.5;
+const int c_a_0 = 50, c_a_1 = 0;
+const int cp_a_0 = 0, cp_a_1 = 1;
+hybrid clock x_d_0;
+const int t_d_0 = 40;
+//const int p_d_0 = 1;
+
+int prob =10;</declaration>
+	<template>
+		<name x="0" y="0">AttackDefenseADMDP</name>
+		<location id="id0" x="-340" y="170">
+			<name x="-365" y="136">A</name>
+			<label kind="invariant" x="-390" y="190">time &lt;= 10</label>
+		</location>
+		<location id="id1" x="-119" y="170">
+			<name x="-102" y="144">B</name>
+		</location>
+		<init ref="id0"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-272" y="153">time &gt;= 10</label>
+		</transition>
+	</template>
+	<system>system AttackDefenseADMDP;</system>
+	<queries>
+		<query>
+			<formula>strategy safe = control: A&lt;&gt; AttackDefenseADMDP.B</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>
