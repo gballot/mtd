@@ -7,9 +7,9 @@ from optimizer import Optimizer
 
 sys.setrecursionlimit(10 ** 6)
 
-d_dk = Defense(period=15, success_probability=1, name="d_dk", cost=1)
-d_cp = Defense(period=15, success_probability=1, name="d_cp", cost=1)
-d_cc = Defense(period=15, success_probability=1, name="d_cc", cost=1)
+d_dk = Defense(period=21, success_probability=1, name="d_dk", cost=1)
+d_cp = Defense(period=30, success_probability=1, name="d_cp", cost=1)
+d_cc = Defense(period=50, success_probability=1, name="d_cc", cost=1)
 d_dsr = Defense(period=15, success_probability=1, name="d_dsr", cost=1)
 
 a_ad = Attack(
@@ -21,14 +21,14 @@ a_ad = Attack(
     name="a_ad",
 )
 a_ic = Attack(
-    completion_time=20,
+    completion_time=10,
     success_probability=1,
     activation_cost=10,
     proportional_cost=2,
     name="a_ic",
 )
 a_sp = Attack(
-    completion_time=20,
+    completion_time=30,
     success_probability=1,
     activation_cost=10,
     proportional_cost=2,
@@ -43,7 +43,7 @@ a_p = Attack(
     name="a_p",
 )
 a_bf = Attack(
-    completion_time=20,
+    completion_time=50,
     success_probability=1,
     activation_cost=10,
     proportional_cost=2,
@@ -51,7 +51,7 @@ a_bf = Attack(
     name="a_bf",
 )
 a_ss = Attack(
-    completion_time=20,
+    completion_time=19,
     success_probability=1,
     activation_cost=10,
     proportional_cost=2,
@@ -59,7 +59,7 @@ a_ss = Attack(
     name="a_ss",
 )
 a_fue = Attack(
-    completion_time=20,
+    completion_time=200,
     success_probability=1,
     activation_cost=10,
     proportional_cost=2,
