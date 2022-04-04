@@ -74,7 +74,7 @@ g_tc = Subgoal(
 )
 g_up = Subgoal(children=[d_cp, a_sp], operation_type=OperationType.AND, name="g_up")
 g_ac = Subgoal(
-    children=[d_cc, a_bf, a_ss], operation_type=OperationType.AND, name="g_ac"
+    children=[d_cc, a_bf, a_ss], operation_type=OperationType.OR, name="g_ac"
 )
 g_th = Subgoal(children=[g_up, a_p, g_ac], operation_type=OperationType.AND, name="g_th")
 g_hs = Subgoal(children=[a_fue], operation_type=OperationType.AND, name="g_hs")
@@ -87,21 +87,94 @@ optimizer = Optimizer(adg)
 optimizer.export("output.xml", simulation_number=10000, cost_limit=400)
 
 # Default defense time
-for time_limit, cost_limit in [(10000,None), (None, 10000), (1000,1000)]:
-    E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+for time_limit, cost_limit in [(10000,None), (None, 10000), (500,1000)]:
+    result = optimizer.verify(
         "output.xml", time_limit=time_limit, cost_limit=cost_limit
     )
-    print(
-        f"With time limit={time_limit} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
-    )
+    if cost_limit is None:
+        E_time, E_cost, P_success_inf, P_success_sup = result
+        print(
+            f"""With time limit={time_limit}, the cheapest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
+    elif time_limit is None:
+        E_time, E_cost, P_success_inf, P_success_sup = result
+        print(
+            f"""With cost limit={cost_limit}, the fastest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
+    elif time_limit is not None and cost_limit is not None:
+        E_time, E_cost, P_success_inf, P_success_sup = result[0]
+        print(
+            f"""With time limit={time_limit}, cost limit={cost_limit}, the cheapest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
+        E_time, E_cost, P_success_inf, P_success_sup = result[1]
+        print(
+            f"""With time limit={time_limit}, cost limit={cost_limit}, the fastest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
+    else:
+        E_time, E_cost, P_success_inf, P_success_sup = result
+        print(
+            f"""Without limits, the fastest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
 
 # Set new defense time
-optimizer.set_defense_times({"d0": 100})
-print("New defense time: d0-> 100")
+new_defenses = {"d_dsr": 720}
+optimizer.set_defense_times(new_defenses)
+print(f"New defense time: {str(new_defenses)}")
 for time_limit, cost_limit in [(10000,None), (None, 10000)]:
-    E_time, E_cost, P_success_inf, P_success_sup = optimizer.verify(
+    result = optimizer.verify(
         "output.xml", time_limit=time_limit, cost_limit=cost_limit
     )
-    print(
-        f"With time limit={time_limit} for the attack:\nE(time) = {E_time}\nE(cost) = {E_cost}\nP(success) in [{P_success_inf}, {P_success_sup}]\n"
-    )
+    if cost_limit is None:
+        E_time, E_cost, P_success_inf, P_success_sup = result
+        print(
+            f"""With time limit={time_limit}, the cheapest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
+    elif time_limit is None:
+        E_time, E_cost, P_success_inf, P_success_sup = result
+        print(
+            f"""With cost limit={cost_limit}, the fastest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
+    elif time_limit is not None and cost_limit is not None:
+        E_time, E_cost, P_success_inf, P_success_sup = result[0]
+        print(
+            f"""With time limit={time_limit}, cost limit={cost_limit}, the cheapest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
+        E_time, E_cost, P_success_inf, P_success_sup = result[1]
+        print(
+            f"""With time limit={time_limit}, cost limit={cost_limit}, the fastest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )
+    else:
+        E_time, E_cost, P_success_inf, P_success_sup = result
+        print(
+            f"""Without limits, the fastest attack strategy gives:
+            E(time) = {E_time}
+            E(cost) = {E_cost}
+            P(success) in [{P_success_inf}, {P_success_sup}]"""
+        )

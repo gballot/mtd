@@ -7,6 +7,59 @@ from admdp import ADMDP
 from adg import ADG, Subgoal, Attack, Defense, OperationType
 from uppaal import UppaalExporter
 
+def extract_formulas(formulas, offset=False):
+        if offset:
+            formulas = formulas[4:]
+        # Formula 9: strategy limited_cost = minE(time)[cost<=cost_limit]: <>AttackDefenseADMDP.goal
+        strategy_found = "Formula is satisfied." in formulas[1]
+        if not strategy_found:
+            return None, None, None, None
+        # Formula 10: E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost
+        E_time = float(
+            re.findall(
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+                formulas[2].split("\n")[2],
+            )[1][0]
+        )
+        time_distribution_matches = re.findall(
+            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[2].split("\n")[3]
+        )
+        time_distribution_low = float(time_distribution_matches[0][0])
+        time_distribution_up = float(time_distribution_matches[1][0])
+        time_distribution_hist = [int(m[0]) for m in time_distribution_matches[4:]]
+        # Formula 11: E[cost<={cost_limit};{simulation_number}](max: cost) under limited_cost
+        E_cost = float(
+            re.findall(
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+                formulas[3].split("\n")[2],
+            )[1][0]
+        )
+        cost_distribution_matches = re.findall(
+            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[3].split("\n")[3]
+        )
+        cost_distribution_low = float(cost_distribution_matches[0][0])
+        cost_distribution_up = float(cost_distribution_matches[1][0])
+        cost_distribution_hist = [int(m[0]) for m in cost_distribution_matches[4:]]
+        # Formula 11: Pr[cost<={cost_limit}](<>AttackDefenseADMDP.goal) under limited_cost
+        P_success_inf = float(
+            re.findall(
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+                formulas[4].split("\n")[2],
+            )[1][0]
+        )
+        P_success_sup = float(
+            re.findall(
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+                formulas[4].split("\n")[2],
+            )[2][0]
+        )
+        P_success_confidence = float(
+            re.findall(
+                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+                formulas[4].split("\n")[3],
+            )[0][0]
+        )
+        return E_time, E_cost, P_success_inf, P_success_sup
 
 def score(E_time, E_cost, P_success_inf, P_success_sup):
     return E_time / 100 - E_cost / 400 + (P_success_inf + P_success_sup) / 2
@@ -72,56 +125,11 @@ class Optimizer:
         output = output.replace("\x1b[K", "")
         output = output.replace("\n\n\n", "\n\n")
         formulas = output.split("\n\n")
-        # Formula 9: strategy limited_cost = minE(time)[cost<=cost_limit]: <>AttackDefenseADMDP.goal
-        strategy_found = "Formula is satisfied." in formulas[1]
-        if strategy_found:
-            # Formula 10: E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost
-            E_time = float(
-                re.findall(
-                    "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[2].split("\n")[2],
-                )[1][0]
-            )
-            time_distribution_matches = re.findall(
-                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[2].split("\n")[3]
-            )
-            time_distribution_low = float(time_distribution_matches[0][0])
-            time_distribution_up = float(time_distribution_matches[1][0])
-            time_distribution_hist = [int(m[0]) for m in time_distribution_matches[4:]]
-            # Formula 11: E[cost<={cost_limit};{simulation_number}](max: cost) under limited_cost
-            E_cost = float(
-                re.findall(
-                    "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[3].split("\n")[2],
-                )[1][0]
-            )
-            cost_distribution_matches = re.findall(
-                "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[3].split("\n")[3]
-            )
-            cost_distribution_low = float(cost_distribution_matches[0][0])
-            cost_distribution_up = float(cost_distribution_matches[1][0])
-            cost_distribution_hist = [int(m[0]) for m in cost_distribution_matches[4:]]
-            # Formula 11: Pr[cost<={cost_limit}](<>AttackDefenseADMDP.goal) under limited_cost
-            P_success_inf = float(
-                re.findall(
-                    "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[4].split("\n")[2],
-                )[1][0]
-            )
-            P_success_sup = float(
-                re.findall(
-                    "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[4].split("\n")[2],
-                )[2][0]
-            )
-            P_success_confidence = float(
-                re.findall(
-                    "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
-                    formulas[4].split("\n")[3],
-                )[0][0]
-            )
-            return E_time, E_cost, P_success_inf, P_success_sup
-        return None, None, None, None
+        if time_limit is not None and cost_limit is not None:
+            return extract_formulas(formulas), extract_formulas(formulas, offset=True)
+        else:
+            return extract_formulas(formulas)
+
 
     def evaluate(
         self, times, simulation_number=10000, time_limit=None, cost_limit=None
