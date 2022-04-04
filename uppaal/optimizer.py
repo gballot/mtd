@@ -72,7 +72,7 @@ class Optimizer:
         output = output.replace("\x1b[K", "")
         output = output.replace("\n\n\n", "\n\n")
         formulas = output.split("\n\n")
-        # Formula 9: strategy limited_cost = minE(time)[cost<=400]: <>AttackDefenseADMDP.goal
+        # Formula 9: strategy limited_cost = minE(time)[cost<=cost_limit]: <>AttackDefenseADMDP.goal
         strategy_found = "Formula is satisfied." in formulas[1]
         if strategy_found:
             # Formula 10: E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost
