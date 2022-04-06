@@ -176,8 +176,20 @@ class ADG:
         self.nodes = self.attacks + self.subgoals
 
         self.defense_periods = []
+        self.defense_proba = []
         for defense in self.defenses:
             self.defense_periods.append(defense.period)
+            self.defense_proba.append(defense.success_probability)
+
+        self.attack_times = []
+        self.attack_proba = []
+        self.attack_costs = []
+        self.attack_costrates = []
+        for attack in self.attacks:
+            self.attack_times.append(attack.completion_time)
+            self.attack_proba.append(attack.success_probability)
+            self.attack_costs.append(attack.activation_cost)
+            self.attack_costrates.append(attack.proportional_cost)
 
     def propagate(self, activated, completed):
         # Add parents node that are completed
