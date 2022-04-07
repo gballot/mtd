@@ -55,7 +55,13 @@ def extract_formulas(formulas, offset=False):
             "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[4].split("\n")[3],
         )[0][0]
     )
-    return E_time, E_cost, (P_success_inf, P_success_sup, P_success_confidence), (time_distribution_low, time_distribution_up, time_distribution_hist), (cost_distribution_low, cost_distribution_up, cost_distribution_hist)
+    return (
+        E_time,
+        E_cost,
+        (P_success_inf, P_success_sup, P_success_confidence),
+        (time_distribution_low, time_distribution_up, time_distribution_hist),
+        (cost_distribution_low, cost_distribution_up, cost_distribution_hist),
+    )
 
 
 def score(E_time, E_cost, P_success_inf, P_success_sup):
@@ -115,7 +121,9 @@ class Optimizer:
     def verify(
         self, file_name, simulation_number=10000, time_limit=None, cost_limit=None
     ):
-        self.exporter.set_queries(simulation_number, time_limit=time_limit, cost_limit=cost_limit)
+        self.exporter.set_queries(
+            simulation_number, time_limit=time_limit, cost_limit=cost_limit
+        )
         command = f"{self.verifyta_prefix}verifyta -s {file_name}"
         process = subprocess.run(command.split(), capture_output=True, encoding="utf-8")
         output = process.stdout

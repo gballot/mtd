@@ -7,76 +7,79 @@ from optimizer import Optimizer
 import numpy as np
 
 # Limits set
-limits = [
-    (10000, None),
-    (2000, None),
-    (1800, None),
-    (1600, None),
-    (1500, None),
-    (1400, None),
-    (1500, None),
-    (1400, None),
-    (1300, None),
-    (1200, None),
-    (1100, None),
-    (1000, None),
-    (900, None),
-    (800, None),
-    (700, None),
-    (600, None),
-    (500, None),
-    (400, None),
-    (300, None),
-    (250, None),
-    (200, None),
-    (150, None),
-    (100, None),
-    (75, None),
-    (50, None),
-    (25, None),
-    (20, None),
-    (15, None),
-    (10, None),
-    (7, None),
-    (5, None),
-    (3, None),
-    (2, None),
-    (1, None),
-    (None, 10000),
-    (None, 4000),
-    (None, 2000),
-    (None, 1900),
-    (None, 1800),
-    (None, 1700),
-    (None, 1600),
-    (None, 1500),
-    (None, 1400),
-    (None, 1300),
-    (None, 1200),
-    (None, 1100),
-    (None, 900),
-    (None, 800),
-    (None, 700),
-    (None, 600),
-    (None, 500),
-    (None, 450),
-    (None, 400),
-    (None, 350),
-    (None, 300),
-    (None, 250),
-    (None, 200),
-    (None, 175),
-    (None, 150),
-    (None, 125),
-    (None, 100),
-    (None, 75),
-    (None, 50),
-    (None, 30),
-    (None, 25),
-    (None, 20),
-    (None, 15),
-    (None, 10),
-    (None, 5),
+time_limits = [
+    10000,
+    2000,
+    1800,
+    1600,
+    1500,
+    1400,
+    1500,
+    1400,
+    1300,
+    1200,
+    1100,
+    1000,
+    900,
+    800,
+    700,
+    600,
+    500,
+    400,
+    300,
+    250,
+    200,
+    150,
+    100,
+    75,
+    50,
+    25,
+    20,
+    15,
+    10,
+    7,
+    5,
+    3,
+    2,
+    1,
+]
+
+cost_limits = [
+    10000,
+    4000,
+    2000,
+    1900,
+    1800,
+    1700,
+    1600,
+    1500,
+    1400,
+    1300,
+    1200,
+    1100,
+    900,
+    800,
+    700,
+    600,
+    500,
+    450,
+    400,
+    350,
+    300,
+    250,
+    200,
+    175,
+    150,
+    125,
+    100,
+    75,
+    50,
+    30,
+    25,
+    20,
+    15,
+    10,
+    5,
 ]
 
 
@@ -161,13 +164,19 @@ def build_adg():
     return ADG(g_0)
 
 
-def print_results(optimizer, time_limit, cost_limit, model_name, csv=False, output=None):
+def print_results(
+    optimizer, time_limit, cost_limit, model_name, csv=False, output=None
+):
     adg = optimizer.admdp.adg
-    result = optimizer.verify(
-        model_name, time_limit=time_limit, cost_limit=cost_limit
-    )
+    result = optimizer.verify(model_name, time_limit=time_limit, cost_limit=cost_limit)
     if csv:
-        E_time, E_cost, (P_success_inf, P_success_sup, P_success_confidence), (time_distribution_low, time_distribution_up, time_distribution_hist), (cost_distribution_low, cost_distribution_up, cost_distribution_hist) = result
+        (
+            E_time,
+            E_cost,
+            (P_success_inf, P_success_sup, P_success_confidence),
+            (time_distribution_low, time_distribution_up, time_distribution_hist),
+            (cost_distribution_low, cost_distribution_up, cost_distribution_hist),
+        ) = result
         line = f"{time_limit}, {cost_limit}, {E_time}, {E_cost}, {P_success_inf}, {P_success_sup}, {P_success_confidence}, {time_distribution_low}, {time_distribution_up}, {'; '.join(map(str, time_distribution_hist)) if time_distribution_hist else None}, {cost_distribution_low}, {cost_distribution_up}, {'; '.join(map(str, cost_distribution_hist)) if cost_distribution_hist else None}, {', '.join(map(str, adg.defense_periods + adg.defense_proba +adg.attack_times + adg.attack_proba + adg.attack_costs + adg.attack_costrates))}"
         if output:
             with open(output, "a") as f:
@@ -194,20 +203,20 @@ def print_results(optimizer, time_limit, cost_limit, model_name, csv=False, outp
             )
         elif time_limit is not None and cost_limit is not None:
             print("TODO: not implemented")
-            #E_time, E_cost, P_success_inf, P_success_sup = result[0]
-            #print(
+            # E_time, E_cost, P_success_inf, P_success_sup = result[0]
+            # print(
             #    f"""With time limit={time_limit}, cost limit={cost_limit}, the cheapest attack strategy gives:
             #    E(time) = {E_time}
             #    E(cost) = {E_cost}
             #    P(success) in [{P_success_inf}, {P_success_sup}]"""
-            #)
-            #E_time, E_cost, P_success_inf, P_success_sup = result[1]
-            #print(
+            # )
+            # E_time, E_cost, P_success_inf, P_success_sup = result[1]
+            # print(
             #    f"""With time limit={time_limit}, cost limit={cost_limit}, the fastest attack strategy gives:
             #    E(time) = {E_time}
             #    E(cost) = {E_cost}
             #    P(success) in [{P_success_inf}, {P_success_sup}]"""
-            #)
+            # )
         else:
             E_time, E_cost, P_success_inf, P_success_sup = result
             print(
@@ -223,25 +232,60 @@ def print_results(optimizer, time_limit, cost_limit, model_name, csv=False, outp
 def explore_limits(optimizer, csv, output):
     time_limit = 100000
     while time_limit is not None:
-        E_time, E_cost, P_success_sup = print_results(optimizer, time_limit, None, csv, output)
-        time_limit = int(max(min([min([E_time, time_limit]) * 0.99, min([E_time, time_limit]) - 5]), 1)) if E_time is not None else None
-
+        E_time, E_cost, P_success_sup = print_results(
+            optimizer, time_limit, None, csv, output
+        )
+        time_limit = (
+            int(
+                max(
+                    min(
+                        [
+                            min([E_time, time_limit]) * 0.99,
+                            min([E_time, time_limit]) - 5,
+                        ]
+                    ),
+                    1,
+                )
+            )
+            if E_time is not None
+            else None
+        )
 
     cost_limit = 100000
     while cost_limit is not None:
-        E_time, E_cost, P_success_sup = print_results(optimizer, None, cost_limit, csv, output)
-        cost_limit = int(max(min([min([E_cost, cost_limit]) * 0.99, min([E_cost, cost_limit]) - 5]), 1)) if E_cost is not None else None
+        E_time, E_cost, P_success_sup = print_results(
+            optimizer, None, cost_limit, csv, output
+        )
+        cost_limit = (
+            int(
+                max(
+                    min(
+                        [
+                            min([E_cost, cost_limit]) * 0.99,
+                            min([E_cost, cost_limit]) - 5,
+                        ]
+                    ),
+                    1,
+                )
+            )
+            if E_cost is not None
+            else None
+        )
 
 
-
-
-
-
-
-
-
-
-
+def list_limits(optimizer, csv, output, time_limits, cost_limits):
+    for time_limit in time_limits:
+        E_time, E_cost, P_success_sup = print_results(
+            optimizer, time_limit, None, csv, output
+        )
+        if E_cost is None:
+            break
+    for cost_limit in cost_limits:
+        E_time, E_cost, P_success_sup = print_results(
+            optimizer, None, cost_limit, csv, output
+        )
+        if E_time is None:
+            break
 
 
 ############
@@ -250,9 +294,9 @@ def explore_limits(optimizer, csv, output):
 
 if __name__ == "__main__":
     csv = True
-    explore = False
-    output = "results.csv.no-explore"
-    model_name = "output.xml"
+    explore = True
+    output = "results.csv.explore"
+    model_name = "output-explore.xml"
     sys.setrecursionlimit(10 ** 6)
 
     adg = build_adg()
@@ -269,16 +313,11 @@ if __name__ == "__main__":
             )
             f.flush()
 
-
-
     # Default defense time
     if explore:
         explore_limits(optimizer, csv, output)
     else:
-        for time_limit, cost_limit in limits:
-            E_time, E_cost, P_success_sup = print_results(optimizer, time_limit, cost_limit, csv, output)
-            if E_cost is None:
-                break
+        list_limits(optimizer, csv, output, time_limits, cost_limits)
 
     # Set new defense time to compromise the cheapest attack
     new_defenses = {"d_dsr": 720}
@@ -288,21 +327,14 @@ if __name__ == "__main__":
     if explore:
         explore_limits(optimizer, csv, output)
     else:
-        for time_limit, cost_limit in limits:
-            E_time, E_cost, P_success_sup = print_results(optimizer, time_limit, cost_limit, csv, output)
-            if E_cost is None:
-                break
-
+        list_limits(optimizer, csv, output, time_limits, cost_limits)
 
     new_defenses = {"d_dsr": 719}
     optimizer.set_defense_times(new_defenses)
     if explore:
         explore_limits(optimizer, csv, output)
     else:
-        for time_limit, cost_limit in limits:
-            E_time, E_cost, P_success_sup = print_results(optimizer, time_limit, cost_limit, csv, output)
-            if E_cost is None:
-                break
+        list_limits(optimizer, csv, output, time_limits, cost_limits)
 
     # Set new defense time to compromise the fastest attack
     new_defenses = {"d_dsr": 719, "d_dk": 2}
@@ -310,39 +342,30 @@ if __name__ == "__main__":
     if explore:
         explore_limits(optimizer, csv, output)
     else:
-        for time_limit, cost_limit in limits:
-            E_time, E_cost, P_success_sup = print_results(optimizer, time_limit, cost_limit, csv, output)
-            if E_cost is None:
-                break
+        list_limits(optimizer, csv, output, time_limits, cost_limits)
 
     new_defenses = {"d_dsr": 719, "d_dk": 1}
     optimizer.set_defense_times(new_defenses)
     if explore:
         explore_limits(optimizer, csv, output)
     else:
-        for time_limit, cost_limit in limits:
-            E_time, E_cost, P_success_sup = print_results(optimizer, time_limit, cost_limit, csv, output)
-            if E_cost is None:
-                break
+        list_limits(optimizer, csv, output, time_limits, cost_limits)
 
     # Play with other defenses
     for new_defenses in [
-            {"d_dsr": 719, "d_dk": 1, "d_cc": 200},
-            {"d_dsr": 719, "d_dk": 1, "d_cc": 100},
-            {"d_dsr": 719, "d_dk": 1, "d_cc": 80},
-            {"d_dsr": 719, "d_dk": 1, "d_cc": 50},
-            {"d_dsr": 719, "d_dk": 1, "d_cc": 20},
-            {"d_dsr": 719, "d_dk": 1, "d_cp": 800},
-            {"d_dsr": 719, "d_dk": 1, "d_cp": 400},
-            {"d_dsr": 719, "d_dk": 1, "d_cp": 200},
-            {"d_dsr": 719, "d_dk": 1, "d_cp": 100},
-            {"d_dsr": 719, "d_dk": 1, "d_cp": 50},
-            ]:
+        {"d_dsr": 719, "d_dk": 1, "d_cc": 200},
+        {"d_dsr": 719, "d_dk": 1, "d_cc": 100},
+        {"d_dsr": 719, "d_dk": 1, "d_cc": 80},
+        {"d_dsr": 719, "d_dk": 1, "d_cc": 50},
+        {"d_dsr": 719, "d_dk": 1, "d_cc": 20},
+        {"d_dsr": 719, "d_dk": 1, "d_cp": 800},
+        {"d_dsr": 719, "d_dk": 1, "d_cp": 400},
+        {"d_dsr": 719, "d_dk": 1, "d_cp": 200},
+        {"d_dsr": 719, "d_dk": 1, "d_cp": 100},
+        {"d_dsr": 719, "d_dk": 1, "d_cp": 50},
+    ]:
         optimizer.set_defense_times(new_defenses)
         if explore:
             explore_limits(optimizer, csv, output)
         else:
-            for time_limit, cost_limit in limits:
-                E_time, E_cost, P_success_sup = print_results(optimizer, time_limit, cost_limit, csv, output)
-                if E_cost is None:
-                    break
+            list_limits(optimizer, csv, output, time_limits, cost_limits)
