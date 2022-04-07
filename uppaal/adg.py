@@ -191,6 +191,11 @@ class ADG:
             self.attack_costs.append(attack.activation_cost)
             self.attack_costrates.append(attack.proportional_cost)
 
+    def update_defense_periods(self):
+        for defense in self.defenses:
+            self.defense_periods.append(defense.period)
+
+
     def propagate(self, activated, completed):
         # Add parents node that are completed
         fixed_point = False

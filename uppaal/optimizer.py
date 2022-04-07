@@ -74,6 +74,7 @@ class Optimizer:
         for defense in self.adg.defenses:
             if defense.name in times:
                 defense.period = times[defense.name]
+            self.adg.update_defense_periods()
         self.exporter.set_defense_times(times)
 
     def minimize(
@@ -114,7 +115,7 @@ class Optimizer:
     def verify(
         self, file_name, simulation_number=10000, time_limit=None, cost_limit=None
     ):
-        self.exporter.set_queries(simulation_number, time_limit, cost_limit)
+        self.exporter.set_queries(simulation_number, time_limit=time_limit, cost_limit=cost_limit)
         command = f"{self.verifyta_prefix}verifyta -s {file_name}"
         process = subprocess.run(command.split(), capture_output=True, encoding="utf-8")
         output = process.stdout

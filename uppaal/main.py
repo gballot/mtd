@@ -151,13 +151,13 @@ def explore_limits(optimizer, csv, output):
     time_limit = 100000
     while time_limit is not None:
         E_time, E_cost, P_success_sup, = print_results(optimizer, time_limit, None, csv, output)
-        time_limit = np.floor(max(min([E_time * 0.99, E_time - 5]), 1)) if E_time is not None else None
+        time_limit = int(max(min([min([E_time, time_limit]) * 0.99, min([E_time, time_limit]) - 5]), 1)) if E_time is not None else None
 
 
     cost_limit = 100000
     while cost_limit is not None:
         E_time, E_cost, P_success_sup, = print_results(optimizer, None, cost_limit, csv, output)
-        cost_limit = np.floor(max(min([E_cost * 0.99, E_cost - 5]), 1)) if E_cost is not None else None
+        cost_limit = int(max(min([min([E_cost, cost_limit]) * 0.99, min([E_cost, cost_limit]) - 5]), 1)) if E_cost is not None else None
 
 if __name__ == "__main__":
     csv = True
