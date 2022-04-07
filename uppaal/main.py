@@ -5,6 +5,9 @@ from adg import ADG, Subgoal, Attack, Defense, OperationType
 from uppaal import UppaalExporter
 from optimizer import Optimizer
 import numpy as np
+import os
+import time
+import subprocess
 
 # Limits set
 time_limits = [
@@ -164,11 +167,91 @@ def build_adg():
     return ADG(g_0)
 
 
+def build_adg_simple():
+    # Defenses
+    d_cp = Defense(period=1000, success_probability=0.5, name="d_cp", cost=1)
+    d_cc = Defense(period=1000, success_probability=1, name="d_cc", cost=1)
+
+    # Atomic attacks
+    a_sp = Attack(
+        completion_time=240,
+        success_probability=1,
+        activation_cost=20,
+        proportional_cost=0,
+        defenses=[d_cp],
+        name="a_sp",
+    )
+    a_p = Attack(
+        completion_time=1,
+        success_probability=1,
+        activation_cost=0,
+        proportional_cost=200,
+        name="a_p",
+    )
+    a_bf = Attack(
+        completion_time=1,
+        success_probability=0.001,
+        activation_cost=0,
+        proportional_cost=1,
+        defenses=[d_cc],
+        name="a_bf",
+    )
+    a_ss = Attack(
+        completion_time=30,
+        success_probability=0.2,
+        activation_cost=10,
+        proportional_cost=0,
+        defenses=[d_cc],
+        name="a_ss",
+    )
+
+    # Subgoals
+    g_up = Subgoal(children=[d_cp, a_sp], operation_type=OperationType.AND, name="g_up")
+    g_ac = Subgoal(
+        children=[d_cc, a_bf, a_ss], operation_type=OperationType.OR, name="g_ac"
+    )
+    g_th = Subgoal(
+        children=[g_up, a_p, g_ac], operation_type=OperationType.AND, name="g_th"
+    )
+
+    return ADG(g_th)
+
+
+def build_adg_very_simple():
+    # Defenses
+    d_cc = Defense(period=1000, success_probability=1, name="d_cc", cost=1)
+
+    # Atomic attacks
+    a_bf = Attack(
+        completion_time=1,
+        success_probability=0.001,
+        activation_cost=0,
+        proportional_cost=1,
+        defenses=[d_cc],
+        name="a_bf",
+    )
+    a_ss = Attack(
+        completion_time=30,
+        success_probability=0.2,
+        activation_cost=10,
+        proportional_cost=0,
+        defenses=[d_cc],
+        name="a_ss",
+    )
+
+    # Subgoals
+    g_ac = Subgoal(
+        children=[a_bf, a_ss], operation_type=OperationType.OR, name="g_ac"
+    )
+
+    return ADG(g_ac)
+
+
 def print_results(
-    optimizer, time_limit, cost_limit, model_name, csv=False, output=None
+    optimizer, time_limit, cost_limit, model_name, csv=False, output=None, simulation_number=10000
 ):
     adg = optimizer.admdp.adg
-    result = optimizer.verify(model_name, time_limit=time_limit, cost_limit=cost_limit)
+    result = optimizer.verify(model_name, simulation_number=simulation_number, time_limit=time_limit, cost_limit=cost_limit)
     if csv:
         (
             E_time,
@@ -229,12 +312,28 @@ def print_results(
     return E_time, E_cost, P_success_sup
 
 
-def explore_limits(optimizer, csv, output):
-    time_limit = 100000
+def explore_limits(optimizer, csv, model_name, output):
+    timeout_series = 0
+    time_limit = 10000
     while time_limit is not None:
-        E_time, E_cost, P_success_sup = print_results(
-            optimizer, time_limit, None, csv, output
-        )
+        print(f"time limit {time_limit}")
+        try:
+            E_time, E_cost, P_success_sup = print_results(
+                optimizer,
+                time_limit=time_limit,
+                cost_limit=None,
+                model_name=model_name,
+                csv=csv,
+                output=output,
+            )
+        except subprocess.TimeoutExpired:
+            timeout_series += 1
+            print(f"time limit {time_limit} -> timeout {timeout_series}")
+            E_time = time_limit  # To continue the loop
+            if timeout_series >= 3:
+                break
+        else:
+            timeout_series = 0
         time_limit = (
             int(
                 max(
@@ -251,11 +350,27 @@ def explore_limits(optimizer, csv, output):
             else None
         )
 
-    cost_limit = 100000
+    timeout_series = 0
+    cost_limit = 10000
     while cost_limit is not None:
-        E_time, E_cost, P_success_sup = print_results(
-            optimizer, None, cost_limit, csv, output
-        )
+        print(f"cost_limit {cost_limit}")
+        try:
+            E_time, E_cost, P_success_sup = print_results(
+                optimizer,
+                time_limit=None,
+                cost_limit=cost_limit,
+                model_name=model_name,
+                csv=csv,
+                output=output,
+            )
+        except subprocess.TimeoutExpired:
+            timeout_series += 1
+            print(f"time limit {time_limit} -> timeout {timeout_series}")
+            E_cost = cost_limit  # To continue the loop
+            if timeout_series >= 3:
+                break
+        else:
+            timeout_series = 0
         cost_limit = (
             int(
                 max(
@@ -273,17 +388,51 @@ def explore_limits(optimizer, csv, output):
         )
 
 
-def list_limits(optimizer, csv, output, time_limits, cost_limits):
+def list_limits(optimizer, csv, model_name, output, time_limits, cost_limits):
+    timeout_series = 0
     for time_limit in time_limits:
-        E_time, E_cost, P_success_sup = print_results(
-            optimizer, time_limit, None, csv, output
-        )
+        print(f"time limit {time_limit}")
+        try:
+            E_time, E_cost, P_success_sup = print_results(
+                optimizer,
+                time_limit=time_limit,
+                cost_limit=None,
+                model_name=model_name,
+                csv=csv,
+                output=output,
+            )
+        except subprocess.TimeoutExpired:
+            timeout_series += 1
+            print(f"time limit {time_limit} -> timeout {timeout_series}")
+            if timeout_series >= 3:
+                break
+            else:
+                continue
+        else:
+            timeout_series = 0
         if E_cost is None:
             break
+    timeout_series = 0
     for cost_limit in cost_limits:
-        E_time, E_cost, P_success_sup = print_results(
-            optimizer, None, cost_limit, csv, output
-        )
+        print(f"cost_limit {cost_limit}")
+        try:
+            E_time, E_cost, P_success_sup = print_results(
+                optimizer,
+                time_limit=None,
+                cost_limit=cost_limit,
+                model_name=model_name,
+                csv=csv,
+                output=output,
+            )
+        except subprocess.TimeoutExpired:
+            timeout_series += 1
+            print(f"time limit {time_limit} -> timeout {timeout_series}")
+            if timeout_series >= 3:
+                break
+            else:
+                continue
+        else:
+            timeout_series = 0
         if E_time is None:
             break
 
@@ -295,11 +444,19 @@ def list_limits(optimizer, csv, output, time_limits, cost_limits):
 if __name__ == "__main__":
     csv = True
     explore = True
-    output = "results.csv.explore"
-    model_name = "output-explore.xml"
+    dirname = f"experiment-{time.strftime('%Y-%m-%d_%H-%M-%S')}"
+    os.makedirs(dirname)
+    output = f"{dirname}/results.csv"
+    model_name = f"{dirname}/output.xml"
+
+    print(f"""csv = {csv}
+explore = {explore}
+output = {output}
+model_name = {model_name}
+""")
     sys.setrecursionlimit(10 ** 6)
 
-    adg = build_adg()
+    adg = build_adg_very_simple()
 
     optimizer = Optimizer(adg)
     optimizer.export(model_name, simulation_number=10000, cost_limit=400)
@@ -313,46 +470,13 @@ if __name__ == "__main__":
             )
             f.flush()
 
-    # Default defense time
-    if explore:
-        explore_limits(optimizer, csv, output)
-    else:
-        list_limits(optimizer, csv, output, time_limits, cost_limits)
-
-    # Set new defense time to compromise the cheapest attack
-    new_defenses = {"d_dsr": 720}
-    optimizer.set_defense_times(new_defenses)
-    if not csv:
-        print(f"New defense time: {str(new_defenses)}")
-    if explore:
-        explore_limits(optimizer, csv, output)
-    else:
-        list_limits(optimizer, csv, output, time_limits, cost_limits)
-
-    new_defenses = {"d_dsr": 719}
-    optimizer.set_defense_times(new_defenses)
-    if explore:
-        explore_limits(optimizer, csv, output)
-    else:
-        list_limits(optimizer, csv, output, time_limits, cost_limits)
-
-    # Set new defense time to compromise the fastest attack
-    new_defenses = {"d_dsr": 719, "d_dk": 2}
-    optimizer.set_defense_times(new_defenses)
-    if explore:
-        explore_limits(optimizer, csv, output)
-    else:
-        list_limits(optimizer, csv, output, time_limits, cost_limits)
-
-    new_defenses = {"d_dsr": 719, "d_dk": 1}
-    optimizer.set_defense_times(new_defenses)
-    if explore:
-        explore_limits(optimizer, csv, output)
-    else:
-        list_limits(optimizer, csv, output, time_limits, cost_limits)
-
     # Play with other defenses
     for new_defenses in [
+        set(),
+        {"d_dsr": 720},
+        {"d_dsr": 719},
+        {"d_dsr": 719, "d_dk": 2},
+        {"d_dsr": 719, "d_dk": 1},
         {"d_dsr": 719, "d_dk": 1, "d_cc": 200},
         {"d_dsr": 719, "d_dk": 1, "d_cc": 100},
         {"d_dsr": 719, "d_dk": 1, "d_cc": 80},
@@ -365,7 +489,15 @@ if __name__ == "__main__":
         {"d_dsr": 719, "d_dk": 1, "d_cp": 50},
     ]:
         optimizer.set_defense_times(new_defenses)
+        print(f"Defense periods: {optimizer.admdp.adg.defense_periods}")
         if explore:
-            explore_limits(optimizer, csv, output)
+            explore_limits(optimizer, csv=csv, model_name=model_name, output=output)
         else:
-            list_limits(optimizer, csv, output, time_limits, cost_limits)
+            list_limits(
+                optimizer,
+                csv=csv,
+                model_name=model_name,
+                output=output,
+                time_limits=time_limits,
+                cost_limits=cost_limits,
+            )

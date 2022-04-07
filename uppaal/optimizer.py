@@ -125,7 +125,9 @@ class Optimizer:
             simulation_number, time_limit=time_limit, cost_limit=cost_limit
         )
         command = f"{self.verifyta_prefix}verifyta -s {file_name}"
-        process = subprocess.run(command.split(), capture_output=True, encoding="utf-8")
+        process = subprocess.run(
+            command.split(), capture_output=True, encoding="utf-8", timeout=60*60/2
+        )
         output = process.stdout
         output = output.replace("\x1b[2K", "")
         output = output.replace("\x1b[K", "")

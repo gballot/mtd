@@ -192,6 +192,7 @@ class ADG:
             self.attack_costrates.append(attack.proportional_cost)
 
     def update_defense_periods(self):
+        self.defense_periods.clear()
         for defense in self.defenses:
             self.defense_periods.append(defense.period)
 
