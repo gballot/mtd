@@ -74,7 +74,7 @@ class Optimizer:
         for defense in self.adg.defenses:
             if defense.name in times:
                 defense.period = times[defense.name]
-            self.adg.update_defense_periods()
+        self.adg.update_defense_periods()
         self.exporter.set_defense_times(times)
 
     def minimize(
