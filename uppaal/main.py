@@ -443,8 +443,9 @@ def list_limits(optimizer, csv, model_name, output, time_limits, cost_limits):
 
 if __name__ == "__main__":
     csv = True
-    explore = True
-    dirname = f"experiment-{time.strftime('%Y-%m-%d_%H-%M-%S')}"
+    explore = False
+    nickname = sys.argv[1] if len(sys.argv) > 1 else ""
+    dirname = f"experiment-{time.strftime('%Y-%m-%d_%H-%M-%S')}{nickname}"
     os.makedirs(dirname)
     output = f"{dirname}/results.csv"
     model_name = f"{dirname}/output.xml"
@@ -456,7 +457,7 @@ model_name = {model_name}
 """)
     sys.setrecursionlimit(10 ** 6)
 
-    adg = build_adg_very_simple()
+    adg = build_adg()
 
     optimizer = Optimizer(adg)
     optimizer.export(model_name, simulation_number=10000, cost_limit=400)
