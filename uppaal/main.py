@@ -95,23 +95,23 @@ def build_adg():
 
     # Atomic attacks
     a_ad = Attack(
-        completion_time=1,
-        success_probability=1,
+        completion_time=8,
+        success_probability=0.5,
         activation_cost=100,
         proportional_cost=200,
         defenses=[d_dk],
         name="a_ad",
     )
     a_ic = Attack(
-        completion_time=2,
-        success_probability=1,
+        completion_time=4,
+        success_probability=0.3,
         activation_cost=0,
         proportional_cost=500,
         name="a_ic",
     )
     a_sp = Attack(
         completion_time=240,
-        success_probability=1,
+        success_probability=0.8,
         activation_cost=20,
         proportional_cost=0,
         defenses=[d_cp],
@@ -142,7 +142,7 @@ def build_adg():
     )
     a_fue = Attack(
         completion_time=720,
-        success_probability=1,
+        success_probability=0.8,
         activation_cost=10,
         proportional_cost=0,
         defenses=[d_dsr],
@@ -489,16 +489,32 @@ model_name = {model_name}
         {"d_dsr": 719, "d_dk": 1, "d_cp": 100},
         {"d_dsr": 719, "d_dk": 1, "d_cp": 50},
     ]:
-        optimizer.set_defense_times(new_defenses)
-        print(f"Defense periods: {optimizer.admdp.adg.defense_periods}")
-        if explore:
-            explore_limits(optimizer, csv=csv, model_name=model_name, output=output)
-        else:
-            list_limits(
-                optimizer,
-                csv=csv,
-                model_name=model_name,
-                output=output,
-                time_limits=time_limits,
-                cost_limits=cost_limits,
-            )
+        pass
+
+    for t_dsr in [2000, 1000, 500, 250]:
+        for t_dk in [40, 20, 10, 5]:
+            for t_cc in [1600, 800, 400, 200]:
+                for t_cp in [800, 400, 200, 100]:
+                    if t_dsr / 250 + t_dk / 5 + t_cc / 200 + t_cp / 100 != 13:
+                        continue
+
+                    new_defenses = {
+                            "d_dsr": t_dsr,
+                            "d_dk": t_dk,
+                            "d_cc": t_cc,
+                            "d_cp": t_cp,
+                            }
+
+                    optimizer.set_defense_times(new_defenses)
+                    print(f"Defense periods: {optimizer.admdp.adg.defense_periods}")
+                    if explore:
+                        explore_limits(optimizer, csv=csv, model_name=model_name, output=output)
+                    else:
+                        list_limits(
+                            optimizer,
+                            csv=csv,
+                            model_name=model_name,
+                            output=output,
+                            time_limits=time_limits,
+                            cost_limits=cost_limits,
+                        )
