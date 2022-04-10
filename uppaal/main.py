@@ -495,7 +495,7 @@ model_name = {model_name}
         for t_dk in [40, 20, 10, 5]:
             for t_cc in [1600, 800, 400, 200]:
                 for t_cp in [800, 400, 200, 100]:
-                    if t_dsr / 250 + t_dk / 5 + t_cc / 200 + t_cp / 100 != 13:
+                    if t_dsr / 250 + t_dk / 5 + t_cc / 200 + t_cp / 100 != 8:
                         continue
 
                     new_defenses = {
