@@ -7,20 +7,20 @@ from optimizer import Optimizer
 
 sys.setrecursionlimit(10 ** 6)
 
-d_0 = Defense(period=10, success_probability=1, name="d_0", cost=1)
+d_0 = Defense(period=10, success_probability=0.5, name="d_0", cost=1)
 
 a_0 = Attack(
-    completion_time=20,
-    success_probability=1,
-    activation_cost=10,
-    proportional_cost=0,
+    completion_time=100,
+    success_probability=0.8,
+    activation_cost=1,
+    proportional_cost=1,
     defenses=[d_0],
     name="a_0",
 )
 a_1 = Attack(
     completion_time=10,
-    success_probability=0.5,
-    activation_cost=0,
+    success_probability=0.9,
+    activation_cost=1000,
     proportional_cost=1,
     name="a_1",
 )

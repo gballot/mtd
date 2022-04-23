@@ -69,7 +69,7 @@ def score(E_time, E_cost, P_success_inf, P_success_sup):
 
 
 class Optimizer:
-    verifyta_prefix = "/opt/uppaal64-4.1.20-stratego-7/bin-Linux/"
+    verifyta_prefix = "/home/gabriel/uppaal64-4.1.20-stratego-7/bin-Linux/"
 
     def __init__(self, adg):
         self.adg = adg
