@@ -18,7 +18,8 @@ def extract_formulas(formulas, offset=False):
     # Formula 10: E[cost<={cost_limit};{simulation_number}](max: time) under limited_cost
     E_time = float(
         re.findall(
-            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[2].split("\n")[2],
+            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+            formulas[2].split("\n")[2],
         )[1][0]
     )
     time_distribution_matches = re.findall(
@@ -30,7 +31,8 @@ def extract_formulas(formulas, offset=False):
     # Formula 11: E[cost<={cost_limit};{simulation_number}](max: cost) under limited_cost
     E_cost = float(
         re.findall(
-            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[3].split("\n")[2],
+            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+            formulas[3].split("\n")[2],
         )[1][0]
     )
     cost_distribution_matches = re.findall(
@@ -42,17 +44,20 @@ def extract_formulas(formulas, offset=False):
     # Formula 11: Pr[cost<={cost_limit}](<>AttackDefenseADMDP.goal) under limited_cost
     P_success_inf = float(
         re.findall(
-            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[4].split("\n")[2],
+            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+            formulas[4].split("\n")[2],
         )[1][0]
     )
     P_success_sup = float(
         re.findall(
-            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[4].split("\n")[2],
+            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+            formulas[4].split("\n")[2],
         )[2][0]
     )
     P_success_confidence = float(
         re.findall(
-            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?", formulas[4].split("\n")[3],
+            "[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
+            formulas[4].split("\n")[3],
         )[0][0]
     )
     return (
@@ -126,7 +131,7 @@ class Optimizer:
         )
         command = f"{self.verifyta_prefix}verifyta -s {file_name}"
         process = subprocess.run(
-            command.split(), capture_output=True, encoding="utf-8", timeout=60*60/2
+            command.split(), capture_output=True, encoding="utf-8", timeout=60 * 60 / 2
         )
         output = process.stdout
         output = output.replace("\x1b[2K", "")

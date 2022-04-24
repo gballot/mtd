@@ -97,8 +97,8 @@ def build_adg():
     a_ad = Attack(
         completion_time=8,
         success_probability=0.5,
-        activation_cost=100,
-        proportional_cost=200,
+        activation_cost=10,
+        proportional_cost=20,
         defenses=[d_dk],
         name="a_ad",
     )
@@ -106,11 +106,11 @@ def build_adg():
         completion_time=4,
         success_probability=0.3,
         activation_cost=0,
-        proportional_cost=500,
+        proportional_cost=50,
         name="a_ic",
     )
     a_sp = Attack(
-        completion_time=240,
+        completion_time=440,
         success_probability=0.8,
         activation_cost=20,
         proportional_cost=0,
@@ -121,7 +121,7 @@ def build_adg():
         completion_time=1,
         success_probability=1,
         activation_cost=0,
-        proportional_cost=200,
+        proportional_cost=100,
         name="a_p",
     )
     a_bf = Attack(
@@ -240,18 +240,27 @@ def build_adg_very_simple():
     )
 
     # Subgoals
-    g_ac = Subgoal(
-        children=[a_bf, a_ss], operation_type=OperationType.OR, name="g_ac"
-    )
+    g_ac = Subgoal(children=[a_bf, a_ss], operation_type=OperationType.OR, name="g_ac")
 
     return ADG(g_ac)
 
 
 def print_results(
-    optimizer, time_limit, cost_limit, model_name, csv=False, output=None, simulation_number=10000
+    optimizer,
+    time_limit,
+    cost_limit,
+    model_name,
+    csv=False,
+    output=None,
+    simulation_number=10000,
 ):
     adg = optimizer.admdp.adg
-    result = optimizer.verify(model_name, simulation_number=simulation_number, time_limit=time_limit, cost_limit=cost_limit)
+    result = optimizer.verify(
+        model_name,
+        simulation_number=simulation_number,
+        time_limit=time_limit,
+        cost_limit=cost_limit,
+    )
     if csv:
         (
             E_time,
@@ -450,11 +459,13 @@ if __name__ == "__main__":
     output = f"{dirname}/results.csv"
     model_name = f"{dirname}/output.xml"
 
-    print(f"""csv = {csv}
+    print(
+        f"""csv = {csv}
 explore = {explore}
 output = {output}
 model_name = {model_name}
-""")
+"""
+    )
     sys.setrecursionlimit(10 ** 6)
 
     adg = build_adg()
@@ -473,42 +484,60 @@ model_name = {model_name}
 
     # Play with other defenses
     for new_defenses in [
-        set(),
-        {"d_dsr": 720},
-        {"d_dsr": 719},
-        {"d_dsr": 719, "d_dk": 2},
-        {"d_dsr": 719, "d_dk": 1},
-        {"d_dsr": 719, "d_dk": 1, "d_cc": 200},
-        {"d_dsr": 719, "d_dk": 1, "d_cc": 100},
-        {"d_dsr": 719, "d_dk": 1, "d_cc": 80},
-        {"d_dsr": 719, "d_dk": 1, "d_cc": 50},
-        {"d_dsr": 719, "d_dk": 1, "d_cc": 20},
-        {"d_dsr": 719, "d_dk": 1, "d_cp": 800},
-        {"d_dsr": 719, "d_dk": 1, "d_cp": 400},
-        {"d_dsr": 719, "d_dk": 1, "d_cp": 200},
-        {"d_dsr": 719, "d_dk": 1, "d_cp": 100},
-        {"d_dsr": 719, "d_dk": 1, "d_cp": 50},
+        {"d_dsr": 100000, "d_dk": 100000, "d_cp": 100000, "d_cc": 100000},
+        # {"d_dsr": 250, "d_dk": 100000, "d_cp": 100000, "d_cc": 100000},
+        # {"d_dsr": 500, "d_dk": 40, "d_cp": 100000, "d_cc": 100000},
+        # {"d_dsr": 100000, "d_dk": 5, "d_cp": 100000, "d_cc": 100000},
+        # {"d_dsr": 1000, "d_dk": 10, "d_cp": 100000, "d_cc": 100000},
+        # {"d_dsr": 100000, "d_dk": 20, "d_cp": 100000, "d_cc": 100000},
+        # {"d_dsr": 100000, "d_dk": 40, "d_cp": 100000, "d_cc": 100000},
+        # {"d_dsr": 100000, "d_dk": 100000, "d_cp": 20, "d_cc": 100000},
+        # {"d_dsr": 100000, "d_dk": 100000, "d_cp": 40, "d_cc": 100000},
+        # {"d_dsr": 100000, "d_dk": 100000, "d_cp": 80, "d_cc": 100000},
+        # {"d_dsr": 100000, "d_dk": 100000, "d_cp": 160, "d_cc": 100000},
+        # {"d_dsr": 100000, "d_dk": 100000, "d_cp": 100000, "d_cc": 20},
+        # {"d_dsr": 100000, "d_dk": 100000, "d_cp": 100000, "d_cc": 40},
+        # {"d_dsr": 100000, "d_dk": 100000, "d_cp": 100000, "d_cc": 80},
+        # {"d_dsr": 100000, "d_dk": 100000, "d_cp": 100000, "d_cc": 160},
     ]:
-        pass
+        optimizer.set_defense_times(new_defenses)
+        print(f"Defense periods: {optimizer.admdp.adg.defense_periods}")
+        if explore:
+            explore_limits(optimizer, csv=csv, model_name=model_name, output=output)
+        else:
+            list_limits(
+                optimizer,
+                csv=csv,
+                model_name=model_name,
+                output=output,
+                time_limits=time_limits,
+                cost_limits=cost_limits,
+            )
 
-    for t_dsr in [2000, 1000, 500, 250]:
-        for t_dk in [40, 20, 10, 5]:
-            for t_cc in [1600, 800, 400, 200]:
-                for t_cp in [800, 400, 200, 100]:
-                    if t_dsr / 250 + t_dk / 5 + t_cc / 200 + t_cp / 100 != 8:
+    for t_dsr in range(1, 3):
+        for t_dk in range(1, 4):
+            for t_cc in range(1, 4):
+                for t_cp in range(1, 4):
+                    if t_dsr + t_dk + t_cc + t_cp != 10:
                         continue
+                    t_dsr = 230 * 3 ** t_dsr
+                    t_dk = 5 * 3 ** t_dk
+                    t_cc = 20 * 3 ** t_cc
+                    t_cp = 100 * 3 ** t_cp
 
                     new_defenses = {
-                            "d_dsr": t_dsr,
-                            "d_dk": t_dk,
-                            "d_cc": t_cc,
-                            "d_cp": t_cp,
-                            }
+                        "d_dsr": t_dsr,
+                        "d_dk": t_dk,
+                        "d_cc": t_cc,
+                        "d_cp": t_cp,
+                    }
 
                     optimizer.set_defense_times(new_defenses)
                     print(f"Defense periods: {optimizer.admdp.adg.defense_periods}")
                     if explore:
-                        explore_limits(optimizer, csv=csv, model_name=model_name, output=output)
+                        explore_limits(
+                            optimizer, csv=csv, model_name=model_name, output=output
+                        )
                     else:
                         list_limits(
                             optimizer,

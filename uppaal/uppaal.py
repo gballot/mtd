@@ -337,7 +337,9 @@ const double {list_to_string(defense_names, prefix='p_', values=p_d, format_valu
             )
             label.text = "xcost = 0"
 
-    def make_queries(self, simulation_number=10000, time_limit=None, cost_limit=None, infinity=100000):
+    def make_queries(
+        self, simulation_number=10000, time_limit=None, cost_limit=None, infinity=100000
+    ):
         """Uppaal and Stratego queries on the model."""
         goal_name = self.serial_to_location_name[self.admdp.accepting_state.serialize()]
         goal_name = "AttackDefenseADMDP." + goal_name
@@ -417,13 +419,17 @@ const double {list_to_string(defense_names, prefix='p_', values=p_d, format_valu
             # Expected time under cheap
             query = etree.SubElement(queries, "query")
             formula = etree.SubElement(query, "formula")
-            formula.text = f"E[cost<={infinity};{simulation_number}](max: time) under limited_cost"
+            formula.text = (
+                f"E[cost<={infinity};{simulation_number}](max: time) under limited_cost"
+            )
             comment = etree.SubElement(query, "comment")
             comment.text = "Expected time under limited cost"
             # Expected cost under cheap
             query = etree.SubElement(queries, "query")
             formula = etree.SubElement(query, "formula")
-            formula.text = f"E[cost<={infinity};{simulation_number}](max: cost) under limited_cost"
+            formula.text = (
+                f"E[cost<={infinity};{simulation_number}](max: cost) under limited_cost"
+            )
             comment = etree.SubElement(query, "comment")
             comment.text = "Expected cost under limited cost"
             # Success probability under cheap

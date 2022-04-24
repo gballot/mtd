@@ -142,7 +142,9 @@ class Attack(Node):
 class Defense(Node):
     def __init__(self, period, success_probability, cost, name, parents=None):
         super().__init__(
-            parents=parents, node_type=NodeType.DEFENSE, name=name,
+            parents=parents,
+            node_type=NodeType.DEFENSE,
+            name=name,
         )
         self.period = period
         self.success_probability = success_probability

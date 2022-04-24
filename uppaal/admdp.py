@@ -42,7 +42,10 @@ class ADMDP:
     def build_admdp(self):
         """Build ADMDP from given ADG."""
         self.initial_state = AttackerState(
-            activated=[], completed=[], adg=self.adg, initial=True,
+            activated=[],
+            completed=[],
+            adg=self.adg,
+            initial=True,
         )
         self.initial_state.build(admdp=self)
 
