@@ -514,10 +514,10 @@ model_name = {model_name}
                 cost_limits=cost_limits,
             )
 
-    for t_dsr in range(1, 3):
-        for t_dk in range(1, 4):
-            for t_cc in range(1, 4):
-                for t_cp in range(1, 4):
+    for t_dsr in range(1, 4):
+        for t_dk in range(1, 5):
+            for t_cc in range(1, 5):
+                for t_cp in range(1, 5):
                     if t_dsr + t_dk + t_cc + t_cp != 10:
                         continue
                     t_dsr = 230 * 3 ** t_dsr
