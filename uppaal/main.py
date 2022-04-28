@@ -514,22 +514,20 @@ model_name = {model_name}
                 cost_limits=cost_limits,
             )
 
-    for t_dsr in range(1, 4):
-        for t_dk in range(1, 5):
-            for t_cc in range(1, 5):
-                for t_cp in range(1, 5):
-                    if t_dsr + t_dk + t_cc + t_cp != 10:
+    for t_dsr in range(3):
+        for t_dk in range(4):
+            for t_cc in range(4):
+                for t_cp in range(4):
+                    if t_dsr + t_dk + t_cc + t_cp != 8:
                         continue
-                    t_dsr = 230 * 3 ** t_dsr
-                    t_dk = 5 * 3 ** t_dk
-                    t_cc = 20 * 3 ** t_cc
-                    t_cp = 100 * 3 ** t_cp
+                    if t_dsr > 0 and t_dk > 0 and t_cc > 0 and t_cp > 0:
+                        continue
 
                     new_defenses = {
-                        "d_dsr": t_dsr,
-                        "d_dk": t_dk,
-                        "d_cc": t_cc,
-                        "d_cp": t_cp,
+                        "d_dsr": 230 * 3 ** t_dsr,
+                        "d_dk": 5 * 3 ** t_dk,
+                        "d_cc": 20 * 3 ** t_cc,
+                        "d_cp": 100 * 3 ** t_cp,
                     }
 
                     optimizer.set_defense_times(new_defenses)
