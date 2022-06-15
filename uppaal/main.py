@@ -219,12 +219,12 @@ def build_adg_simple():
 def build_adg_very_simple():
     # Defenses
     d_cc = Defense(period=1000, success_probability=1, name="d_cc", cost=1)
-    d_cp = Defense(period=1000, success_probability=0.5, name="d_cp", cost=1)
+    d_cp = Defense(period=1000, success_probability=1, name="d_cp", cost=1)
 
     # Atomic attacks
     a_bf = Attack(
         completion_time=1,
-        success_probability=0.001,
+        success_probability=1,
         activation_cost=0,
         proportional_cost=1,
         defenses=[d_cc],
@@ -232,9 +232,9 @@ def build_adg_very_simple():
     )
     a_ss = Attack(
         completion_time=30,
-        success_probability=0.2,
-        activation_cost=10,
-        proportional_cost=0,
+        success_probability=1,
+        activation_cost=0,
+        proportional_cost=10,
         defenses=[d_cc],
         name="a_ss",
     )
@@ -280,8 +280,14 @@ def print_results(
         else:
             print(line)
     else:
+        (
+            E_time,
+            E_cost,
+            (P_success_inf, P_success_sup, P_success_confidence),
+            (time_distribution_low, time_distribution_up, time_distribution_hist),
+            (cost_distribution_low, cost_distribution_up, cost_distribution_hist),
+        ) = result
         if cost_limit is None:
-            E_time, E_cost, P_success_inf, P_success_sup = result
             print(
                 f"""With time limit={time_limit}, the cheapest attack strategy gives:
                 E(time) = {E_time}
@@ -289,7 +295,6 @@ def print_results(
                 P(success) in [{P_success_inf}, {P_success_sup}]"""
             )
         elif time_limit is None:
-            E_time, E_cost, P_success_inf, P_success_sup = result
             print(
                 f"""With cost limit={cost_limit}, the fastest attack strategy gives:
                 E(time) = {E_time}
@@ -298,14 +303,12 @@ def print_results(
             )
         elif time_limit is not None and cost_limit is not None:
             print("TODO: not implemented")
-            # E_time, E_cost, P_success_inf, P_success_sup = result[0]
             # print(
             #    f"""With time limit={time_limit}, cost limit={cost_limit}, the cheapest attack strategy gives:
             #    E(time) = {E_time}
             #    E(cost) = {E_cost}
             #    P(success) in [{P_success_inf}, {P_success_sup}]"""
             # )
-            # E_time, E_cost, P_success_inf, P_success_sup = result[1]
             # print(
             #    f"""With time limit={time_limit}, cost limit={cost_limit}, the fastest attack strategy gives:
             #    E(time) = {E_time}
@@ -313,7 +316,6 @@ def print_results(
             #    P(success) in [{P_success_inf}, {P_success_sup}]"""
             # )
         else:
-            E_time, E_cost, P_success_inf, P_success_sup = result
             print(
                 f"""Without limits, the fastest attack strategy gives:
                 E(time) = {E_time}
@@ -470,7 +472,7 @@ output = {output}
 model_name = {model_name}
 """
     )
-    sys.setrecursionlimit(10**6)
+    sys.setrecursionlimit(10 ** 6)
 
     adg = build_adg_very_simple()
 
@@ -528,10 +530,10 @@ model_name = {model_name}
                         continue
 
                     new_defenses = {
-                        "d_dsr": 230 * 3**t_dsr,
-                        "d_dk": 5 * 3**t_dk,
-                        "d_cc": 20 * 3**t_cc,
-                        "d_cp": 100 * 3**t_cp,
+                        "d_dsr": 230 * 3 ** t_dsr,
+                        "d_dk": 5 * 3 ** t_dk,
+                        "d_cc": 20 * 3 ** t_cc,
+                        "d_cp": 100 * 3 ** t_cp,
                     }
 
                     optimizer.set_defense_times(new_defenses)
