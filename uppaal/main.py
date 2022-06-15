@@ -219,6 +219,7 @@ def build_adg_simple():
 def build_adg_very_simple():
     # Defenses
     d_cc = Defense(period=1000, success_probability=1, name="d_cc", cost=1)
+    d_cp = Defense(period=1000, success_probability=0.5, name="d_cp", cost=1)
 
     # Atomic attacks
     a_bf = Attack(
@@ -239,9 +240,12 @@ def build_adg_very_simple():
     )
 
     # Subgoals
-    g_ac = Subgoal(children=[a_bf, a_ss], operation_type=OperationType.OR, name="g_ac")
+    g_ac = Subgoal(
+        children=[a_bf, a_ss, d_cp], operation_type=OperationType.OR, name="g_ac"
+    )
+    g_0 = Subgoal(children=[g_ac], operation_type=OperationType.AND, name="g_0")
 
-    return ADG(g_ac)
+    return ADG(g_0)
 
 
 def print_results(
@@ -468,7 +472,7 @@ model_name = {model_name}
     )
     sys.setrecursionlimit(10**6)
 
-    adg = build_adg()
+    adg = build_adg_very_simple()
 
     optimizer = Optimizer(adg)
     optimizer.export(model_name, simulation_number=10000, cost_limit=400)

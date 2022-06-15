@@ -287,6 +287,8 @@ const double {list_to_string(defense_names, prefix='p_', values=p_d, format_valu
                 {"kind": "guard", "x": str(label_x), "y": str(label_y)},
             )
             label.text = f"x_{edge.defense.name} >= t_{edge.defense.name}"
+            for follower in edge.defense.followers:
+                label.text = label.text + f" and x_{follower.name} < t_{follower.name}"
         if edge.type == EdgeType.TO_COMPLETION:
             transition.set("controllable", "false")
             label = etree.SubElement(
@@ -309,6 +311,8 @@ const double {list_to_string(defense_names, prefix='p_', values=p_d, format_valu
                 {"kind": "guard", "x": str(label_x), "y": str(label_y)},
             )
             label.text = f"x_{edge.defense.name} >= t_{edge.defense.name}"
+            for follower in edge.defense.followers:
+                label.text = label.text + f" and x_{follower.name} < t_{follower.name}"
         if edge.type == EdgeType.COMPLETION:
             label = etree.SubElement(
                 transition,
