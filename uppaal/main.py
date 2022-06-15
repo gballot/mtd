@@ -2,7 +2,6 @@ import sys
 
 from admdp import ADMDP
 from adg import ADG, Subgoal, Attack, Defense, OperationType
-from uppaal import UppaalExporter
 from optimizer import Optimizer
 import numpy as np
 import os
@@ -451,13 +450,14 @@ def list_limits(optimizer, csv, model_name, output, time_limits, cost_limits):
 ############
 
 if __name__ == "__main__":
-    csv = True
+    csv = False
     explore = False
     nickname = sys.argv[1] if len(sys.argv) > 1 else ""
-    dirname = f"experiment-{time.strftime('%Y-%m-%d_%H-%M-%S')}{nickname}"
-    os.makedirs(dirname)
-    output = f"{dirname}/results.csv"
-    model_name = f"{dirname}/output.xml"
+    if csv:
+        dirname = f"experiment-{time.strftime('%Y-%m-%d_%H-%M-%S')}{nickname}"
+        os.makedirs(dirname)
+    output = f"{dirname}/results.csv" if csv else None
+    model_name = f"{dirname}/output.xml" if csv else "output.xml"
 
     print(
         f"""csv = {csv}

@@ -149,6 +149,8 @@ class Defense(Node):
         self.period = period
         self.success_probability = success_probability
         self.cost = cost
+        self.followers = None
+        self.followed = None
 
 
 class ADG:
@@ -157,6 +159,10 @@ class ADG:
         self.root = root
         self.root.set_parents()
         self.init_dfs()
+        if self.follows_cyclic():
+            print(
+                "Warning: defenses following is cyclic! This leads to nondeterminism."
+            )
 
     def get_children(self):
         return self.root.get_children()
@@ -182,6 +188,16 @@ class ADG:
         for defense in self.defenses:
             self.defense_periods.append(defense.period)
             self.defense_proba.append(defense.success_probability)
+            defense.followers = [
+                defense2
+                for defense2 in self.defenses
+                if self.follows(defense, defense2)
+            ]
+            defense.followed = [
+                defense2
+                for defense2 in self.defenses
+                if self.follows(defense2, defense)
+            ]
 
         self.attack_times = []
         self.attack_proba = []
@@ -260,3 +276,29 @@ class ADG:
         for node in activated.copy():
             if node in completed:
                 activated.remove(node)
+
+    def follows(self, d1, d2):
+        """Returns 'd2 follows d1' (i.e., d1 |> d2 using the triangle notation)."""
+
+        for node1 in d1.parents:
+            for node2 in node1.get_children():
+                if node2 not in d1.parents and node2 in d2.parents:
+                    return True
+        return False
+
+    def find_cycle(self, defense, visited):
+        if defense in visited:
+            return True
+        visited.append(defense)
+        return any(
+            [self.find_cycle(follower, visited) for follower in defense.followers]
+        )  # returns False if empty
+
+    def follows_cyclic(self):
+        defenses = self.defenses.copy()
+        for defense in defenses:
+            visited = []
+            if self.find_cycle(defense, visited):
+                return True
+
+        return False
