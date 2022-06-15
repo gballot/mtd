@@ -5,7 +5,7 @@ from adg import ADG, Subgoal, Attack, Defense, OperationType
 from uppaal import UppaalExporter
 from optimizer import Optimizer
 
-sys.setrecursionlimit(10 ** 6)
+sys.setrecursionlimit(10**6)
 
 d_0 = Defense(period=10, success_probability=0.5, name="d_0", cost=1)
 

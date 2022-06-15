@@ -466,7 +466,7 @@ output = {output}
 model_name = {model_name}
 """
     )
-    sys.setrecursionlimit(10 ** 6)
+    sys.setrecursionlimit(10**6)
 
     adg = build_adg()
 
@@ -524,10 +524,10 @@ model_name = {model_name}
                         continue
 
                     new_defenses = {
-                        "d_dsr": 230 * 3 ** t_dsr,
-                        "d_dk": 5 * 3 ** t_dk,
-                        "d_cc": 20 * 3 ** t_cc,
-                        "d_cp": 100 * 3 ** t_cp,
+                        "d_dsr": 230 * 3**t_dsr,
+                        "d_dk": 5 * 3**t_dk,
+                        "d_cc": 20 * 3**t_cc,
+                        "d_cp": 100 * 3**t_cp,
                     }
 
                     optimizer.set_defense_times(new_defenses)
