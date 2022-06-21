@@ -474,10 +474,12 @@ model_name = {model_name}
     )
     sys.setrecursionlimit(10 ** 6)
 
-    adg = build_adg_very_simple()
+    adg = build_adg()
 
     optimizer = Optimizer(adg)
     optimizer.export(model_name, simulation_number=10000, cost_limit=400)
+    admdp = optimizer.admdp.__str__()
+    print(admdp.split('\n')[0] + "\n")
 
     if csv:
         defense_names = [defense.name for defense in adg.defenses]
